@@ -2,13 +2,16 @@
 
 Tool chrome **layout** (pane structure recipes) + **controls** (Svelte components).
 
-Dock / window chrome is **optional** and not shipped in `0.1.0` — shells stay per app (game-mono Dock, forge rail, spine stages).
+Optional shell: [`@samthesomebody/dock`](./dock) — splits/tabs/floats. Depends on this package; this package does **not** depend on dock. forge rail / spine stages are peer shells.
 
 ## Install
 
 ```bash
 npm install @samthesomebody/kit
 # peer: svelte ^5
+
+# optional shell
+npm install @samthesomebody/dock
 ```
 
 ## Layout
@@ -55,6 +58,14 @@ Recipes: `fields` | `toolbar` | `stack`. Gaps: `--dock-pad` only.
 ```ts
 import '@samthesomebody/kit/components/index.css';
 ```
+
+## Dock (optional)
+
+```bash
+npm install @samthesomebody/dock
+```
+
+See [`dock/README.md`](./dock/README.md).
 
 ## Agents
 

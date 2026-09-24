@@ -1,0 +1,757 @@
+/* ════════════════════════════════════════════════════════════════════
+   DOCK KIT — the signed artifact's CSS contract, ported 1:1
+   (docs/specs/2026-09-03-dock-kit-design.md §DOM / class contract).
+
+   No literal number or color appears here: every knob is a var(--dock-*)
+   written by theme.ts (applyDockTheme, per .dock-stage) and every color
+   resolves to a var(--tool-*) reference — reskinning tools/ui/tokens.css
+   reskins every dock. Structural ratios (flex growth, 50% centering)
+   are the flex/box model itself, not knobs.
+
+     .dock-stage                      positioned host; tree fills it
+       .dock-root                     tree mount (flex, edge-to-edge)
+         .dock-split.row|.col         split node
+           <a> .dock-divider <b>      children + divider, in order
+         .dock-leaf[.collapsed|.solo] tab group (.solo = no strip at all)
+           .dock-tabstrip             single-line, scrolls on overflow
+             .dock-spill.l|.r         fade + hover chevron
+             .dock-tab[.on]           draggable; .dock-tab-label,
+                                      .dock-tab-close (consumer-gated)
+           .dock-body
+             .dock-content[data-fit="cover"]   consumer content
+           .dock-collapsed-stub       row-collapsed ▸
+         .dock-group.row|.col         fully-collapsed split: ▸ rail | bar
+           .dock-group-cell > .dock-group-tab
+         .dock-empty                  empty-root drop target
+       .dock-float[.front|.shaded|.moving]   a full tree +
+         .dock-float-grip + .dock-float-edge[data-dir]×8
+     .dock-insert · .dock-drop-preview       indicators
+
+   SQUARED, everywhere. The drop preview, the float and its panes gave up
+   their radius 2026-09-05 with `Card` ([HUMAN] Sam: "none of the tools should
+   have the card styles… further align the styles"). The control kit's signed
+   design retired radius from every control and locked the floating surface to
+   squared; a float that kept its corners was the last thing in the estate
+   that did not agree.
+
+   NO rAF, ever — CSS transitions are the only motion, and
+   prefers-reduced-motion kills those.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* scoped forms of the artifact's base resets — phase 2 promotes them to
+   tokens.css; :where() keeps their specificity at the artifact's global
+   (0,0,1) so the tab cascade below is unchanged */
+:where(.dock-stage) button {
+	font-family: var(--tool-font);
+	color: var(--tool-text);
+}
+:where(.dock-stage) button:focus-visible {
+	outline: var(--dock-focus-ring) solid var(--tool-accent);
+	outline-offset: calc(var(--dock-focus-ring) / 2);
+}
+:where(.dock-stage) ::selection {
+	background: var(--tool-accent);
+	color: var(--tool-panel);
+}
+
+.dock-stage {
+	flex: 1;
+	position: relative;
+	min-width: 0;
+	background: var(--tool-bg);
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+}
+
+.dock-root {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+}
+.dock-root > * {
+	flex: 1 1 0;
+	min-width: 0;
+	min-height: 0;
+}
+
+.dock-split {
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+}
+.dock-split.row {
+	flex-direction: row;
+}
+.dock-split.col {
+	flex-direction: column;
+}
+.dock-split > * {
+	min-width: 0;
+	min-height: 0;
+}
+
+/* VS Code sash: hairline, wider invisible grab zone, accent bar on hover */
+.dock-divider {
+	flex: 0 0 var(--dock-divider);
+	position: relative;
+	z-index: var(--dock-z-divider);
+	background: var(--tool-border);
+}
+.dock-split.row > .dock-divider {
+	cursor: col-resize;
+}
+.dock-split.col > .dock-divider {
+	cursor: row-resize;
+}
+.dock-divider::before {
+	content: "";
+	position: absolute; /* wider grab zone */
+}
+.dock-split.row > .dock-divider::before {
+	inset: 0 calc((var(--dock-divider) - var(--dock-grab)) / 2);
+}
+.dock-split.col > .dock-divider::before {
+	inset: calc((var(--dock-divider) - var(--dock-grab)) / 2) 0;
+}
+.dock-divider::after {
+	content: "";
+	position: absolute;
+	background: var(--tool-accent);
+	opacity: 0;
+	pointer-events: none;
+	/* short delay on hover so mousing across panes doesn't flicker accents */
+	transition: opacity var(--tool-duration-fast) var(--tool-ease-out) var(--dock-sash-delay);
+}
+.dock-split.row > .dock-divider::after {
+	inset: 0 calc((var(--dock-divider) - var(--dock-sash)) / 2);
+}
+.dock-split.col > .dock-divider::after {
+	inset: calc((var(--dock-divider) - var(--dock-sash)) / 2) 0;
+}
+.dock-divider:hover::after,
+.dock-divider.active::after,
+.dock-divider:focus-visible::after {
+	opacity: 1;
+}
+.dock-divider.active::after,
+.dock-divider:focus-visible::after {
+	transition-delay: 0ms;
+}
+.dock-divider.active,
+.dock-divider:focus-visible {
+	outline: none;
+}
+body.tab-drag .dock-divider {
+	pointer-events: none; /* drops pass to panes */
+}
+body.resizing {
+	user-select: none;
+	-webkit-user-select: none;
+}
+body.resizing * {
+	cursor: inherit;
+}
+.dock-divider.disabled {
+	pointer-events: none;
+}
+
+/* docked leaves are borderless — the hairline sash is the only separator */
+.dock-leaf {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	background: var(--tool-panel);
+	overflow: hidden;
+}
+
+/* A BARE pane has NO tab heading at all, hover included: content owns it.
+   Two ways in, one class, because the reason is the same both times — the
+   bar carries no choice (`tree.ts` `isBareLeaf`):
+
+     · the layout is down to ONE pane with one tab (the root leaf — e.g. a
+       dev game as the sole base pane);
+     · focus mode (`hideSingleTabBars`, ⌘/Ctrl+B) is on and this docked
+       pane holds one tab.
+
+   A drop on the body joins as a second tab and the strip returns with it.
+   Collapsed panes and floats keep theirs either way: collapsed, the strip
+   IS the pane; in a float, it carries the ⠿ grip that moves the window. */
+.dock-leaf.solo > .dock-tabstrip {
+	display: none;
+}
+
+/* accordion: clicking the active tab collapses a leaf to its strip.
+   Collapsed tabs read INACTIVE (no accent, no fused bg) and still scroll. */
+.dock-leaf.collapsed > .dock-body {
+	display: none;
+}
+.dock-leaf.collapsed > .dock-tabstrip {
+	border-bottom: 0;
+}
+.dock-leaf.collapsed .dock-tab,
+.dock-leaf.collapsed .dock-tab.on {
+	background: none;
+	color: var(--tool-muted);
+	border-block-end-color: transparent;
+}
+.dock-leaf.collapsed .dock-tab:hover {
+	color: var(--tool-text);
+}
+/* collapsed tabs reveal their × on hover/focus only — never at rest */
+.dock-leaf.collapsed .dock-tab.on .dock-tab-close {
+	opacity: 0;
+}
+.dock-leaf.collapsed .dock-tab:hover .dock-tab-close,
+.dock-leaf.collapsed .dock-tab:focus-visible .dock-tab-close {
+	opacity: 1;
+}
+.dock-split.col > .dock-leaf.collapsed,
+.dock-root > .dock-leaf.collapsed {
+	flex: 0 0 auto !important;
+}
+
+/* row-split collapse: expander stub, glyph only. Col-split collapse
+   keeps the horizontal strip. */
+.dock-collapsed-stub {
+	display: none;
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: var(--tool-bg);
+	border: 0;
+	cursor: pointer;
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	font-family: var(--tool-font);
+}
+.dock-collapsed-stub:hover {
+	color: var(--tool-text);
+}
+.dock-split.row > .dock-leaf.collapsed {
+	flex: 0 0 var(--dock-tab-h) !important;
+}
+.dock-split.row > .dock-leaf.collapsed > .dock-tabstrip {
+	display: none;
+}
+.dock-split.row > .dock-leaf.collapsed > .dock-collapsed-stub {
+	display: flex;
+}
+
+/* ── ANY fully-collapsed split renders as ONE group on its parent's
+   axis. A horizontal bar is STRUCTURAL: one cell per child in tree
+   order (leaf → one clickable title per tab, nested split → ▸), with
+   hairline dividers between; each cell reopens its own side. A
+   vertical rail is a single ▸ (reopen last-collapsed). All collapsed
+   chrome sits on the lighter strip tint. ── */
+.dock-group {
+	background: var(--tool-bg);
+	border: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--tool-muted);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+}
+.dock-group.row {
+	width: var(--dock-tab-h);
+	cursor: pointer;
+}
+.dock-group.row:hover {
+	color: var(--tool-text);
+}
+/* the bar shows every tab untruncated and scrolls like a strip when
+   the split width is reached (hidden scrollbar · wheel · shadow fades) */
+.dock-group.col {
+	height: var(--dock-tab-h);
+	justify-content: flex-start;
+	align-items: stretch;
+	padding: 0;
+	font-size: var(--tool-font-size-body);
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
+}
+.dock-group.col::-webkit-scrollbar {
+	display: none;
+}
+.dock-group-cell {
+	flex: none;
+	display: flex;
+	align-items: stretch;
+	gap: 0;
+	background: none;
+	border: 0;
+	border-right: var(--dock-divider) solid var(--tool-border);
+	padding: 0;
+	cursor: pointer;
+	color: var(--tool-muted);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+	letter-spacing: var(--dock-tab-tracking);
+	line-height: 1;
+	white-space: nowrap;
+}
+/* a leaf cell lists its pane's tabs; each title is clickable on its
+   own (reopen + select). Bar tabs use the SAME box as strip tabs —
+   pad left/top/gap, pad-tight right (× side-bearing), pad visual
+   bottom — with the half-height separators between titles. */
+.dock-group-tab {
+	position: relative;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--dock-pad);
+	padding: var(--dock-pad) var(--dock-pad-tight) var(--dock-pad) var(--dock-pad);
+}
+.dock-group-tab:hover {
+	color: var(--tool-text);
+}
+.dock-group-tab + .dock-group-tab::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	height: calc(var(--dock-tab-h) / 2);
+	width: var(--dock-divider);
+	background: var(--tool-border);
+}
+/* every bar tab carries its own hover-revealed × closing that tab —
+   exactly the collapsed-strip rule; vertical ▸ forms have no × */
+.dock-group-tab:hover .dock-tab-close {
+	opacity: 1;
+}
+
+.dock-tabstrip {
+	flex: none;
+	height: var(--dock-tab-h);
+	display: flex;
+	align-items: stretch;
+	position: relative;
+	background: var(--tool-bg);
+	border-bottom: var(--dock-divider) solid var(--tool-border);
+	overflow-x: auto;
+	overflow-y: hidden;
+	white-space: nowrap;
+	scrollbar-width: none;
+}
+.dock-tabstrip::-webkit-scrollbar {
+	display: none;
+}
+
+/* ── strip overflow — hidden scrollbar; a panel shadow edge fade marks
+   clipped tabs, hovering it reveals a paging chevron (no button chrome) */
+.dock-spill {
+	position: sticky;
+	flex: none;
+	width: 0;
+	z-index: var(--dock-z-spill);
+	pointer-events: none;
+}
+.dock-spill.l {
+	left: 0;
+}
+.dock-spill.r {
+	right: 0;
+}
+/* edge zone = tab rhythm: one pad each side of the ~pad-wide glyph */
+.dock-spill i,
+.dock-spill button {
+	display: none;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: calc(3 * var(--dock-pad));
+}
+.dock-spill i {
+	pointer-events: none;
+}
+.dock-spill.l i,
+.dock-spill.l button {
+	left: 0;
+}
+.dock-spill.r i,
+.dock-spill.r button {
+	right: 0;
+}
+/* panel shadow fade — clipped tabs dim into the edge rather than
+   picking up a foreign colour band */
+.dock-spill.l i {
+	background: linear-gradient(90deg, var(--tool-panel), transparent);
+}
+.dock-spill.r i {
+	background: linear-gradient(270deg, var(--tool-panel), transparent);
+}
+.dock-spill button {
+	border: 0;
+	padding: 0;
+	background: none;
+	cursor: pointer;
+	pointer-events: auto;
+	color: transparent;
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+	align-items: center;
+	justify-content: center;
+	transition: color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.dock-spill button:hover,
+.dock-spill button:focus-visible {
+	color: var(--tool-text);
+}
+.can-l > .dock-spill.l i {
+	display: block;
+}
+.can-r > .dock-spill.r i {
+	display: block;
+}
+.can-l > .dock-spill.l button {
+	display: flex;
+}
+.can-r > .dock-spill.r button {
+	display: flex;
+}
+
+/* pad rhythm: left/top and label↔close gap match the bottom's visual
+   space (pad-tight + underline reserve = pad). Trailing padding is
+   pad-tight — the × glyph's side-bearing makes a full pad read wider
+   than it is, so pad-tight balances the ×↔separator↔next-char cluster
+   optically. */
+.dock-tab {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--dock-pad);
+	position: relative;
+	background: none;
+	border: 0;
+	border-block-end: var(--dock-tab-underline) solid transparent;
+	padding: var(--dock-pad) var(--dock-pad-tight) var(--dock-pad-tight) var(--dock-pad);
+	line-height: 1;
+	cursor: pointer;
+	font-size: var(--tool-font-size-body);
+	letter-spacing: var(--dock-tab-tracking);
+	color: var(--tool-muted);
+	max-width: var(--dock-tab-max-w);
+	transition: color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.dock-tab:hover {
+	color: var(--tool-text);
+}
+/* half-height centered separator between adjacent tabs — suppressed
+   on both edges of the active tab in EXPANDED strips only; a collapsed
+   strip reads fully inactive, so its separators all stay */
+.dock-tab + .dock-tab::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	height: 50%;
+	width: var(--dock-divider);
+	background: var(--tool-border);
+}
+.dock-leaf:not(.collapsed) .dock-tab.on::before,
+.dock-leaf:not(.collapsed) .dock-tab.on + .dock-tab::before {
+	display: none;
+}
+/* active tab fuses with the pane body: panel bg + accent underline */
+.dock-tab.on {
+	color: var(--tool-text);
+	background: var(--tool-panel);
+	border-block-end-color: var(--tool-accent);
+}
+.dock-tab:focus-visible {
+	outline: var(--dock-focus-ring) solid var(--tool-accent);
+	outline-offset: calc(-1 * var(--dock-focus-ring));
+}
+.dock-tab.dragging {
+	opacity: var(--dock-drag-opacity);
+}
+/* Status light: paint lives in `components/controls.css` (Button busy /
+   Notification / tabs share one device). Dock still mounts the markup. */
+
+.dock-tab-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+/* close reveals on hover/active/focus; opacity keeps the hit target
+   stable. Sized by the label's own type — no box of its own */
+.dock-tab-close {
+	flex: none;
+	font-size: inherit;
+	line-height: 1;
+	color: var(--tool-muted);
+	opacity: 0;
+	transition: opacity var(--tool-duration-fast) var(--tool-ease-out);
+}
+.dock-tab:hover .dock-tab-close,
+.dock-tab.on .dock-tab-close,
+.dock-tab:focus-visible .dock-tab-close {
+	opacity: 1;
+}
+.dock-tab-close:hover {
+	color: var(--tool-danger);
+}
+
+.dock-insert {
+	position: absolute;
+	top: var(--tool-space-1);
+	bottom: var(--tool-space-1);
+	width: var(--dock-insert-w);
+	background: var(--tool-accent);
+	pointer-events: none;
+	z-index: var(--dock-z-insert);
+}
+
+.dock-body {
+	flex: 1;
+	min-height: 0;
+	position: relative;
+	overflow: hidden;
+}
+/* THE VERTICAL BAR IS THE KIT'S DRAWN RAIL, not a dressed native one: the
+   body is the `.kit-scroll` frame and this is its `.kit-scroll-view`
+   (`view.ts` binds them per pane). The kit hides the native bar on both axes,
+   which is right for the axis it draws and wrong for the one it does not —
+   the rail is vertical only — so the horizontal bar is dressed back in, at
+   the same size and colours it always had. Per-axis, because `display: none`
+   from the kit is one rule for both. */
+.dock-content {
+	position: absolute;
+	inset: 0;
+	overflow: auto;
+}
+.dock-content::-webkit-scrollbar:horizontal {
+	display: block;
+	height: var(--dock-scrollbar);
+}
+.dock-content::-webkit-scrollbar-corner {
+	background: transparent;
+}
+.dock-content::-webkit-scrollbar-thumb:horizontal {
+	background: var(--dock-scrollbar-thumb);
+}
+.dock-content:hover::-webkit-scrollbar-thumb:horizontal {
+	background: var(--dock-scrollbar-thumb-hover);
+}
+/* THE RAIL GROWS INWARD HERE, and only here. The kit grows it outward from
+   the frame's inner edge, on the bargain that the 6px lands on whatever is
+   beyond the pane. A dock pane has no beyond: `.dock-body` clips, so every
+   pixel of that growth was cut and the bar could never be aimed at. So the
+   expanded width is taken from inside the pane instead — the same overlay
+   trade the kit already makes, pointed the one way this frame can show.
+   Recorded in `fidelity/FIDELITY.md`. */
+.dock-body.near > .kit-scroll-rail {
+	inset-inline-start: calc(100% - var(--tool-space-3) / 2);
+}
+/* A KIT PANE INSIDE A TAB DOES NOT OWN THE SCROLLING — THE TAB DOES.
+   `.kit-pane` declares `overflow: auto` (`controls/pane.css`) because it is
+   "what a tool puts inside a dock pane" and something had to scroll. That
+   something is this scrollport, one element out: with the pane taking the
+   scroll, `.dock-content` never filled, the drawn rail never fired, and the
+   reader got the platform's default bar one box in — every lobby tab, and
+   any host that reaches the kit through `tool-ui`'s `Pane`. So the outermost
+   pane in a tab grows to its content and the TAB scrolls it.
+
+   Outermost only (`:not(.kit-pane .kit-pane)`), at any wrapper depth: a pane
+   nested inside another one is a region its author chose to bound, and
+   hoisting those too would flatten every inner scroll area in the estate.
+   `.fill` is exempt — its one child (an iframe, a canvas, a terminal) owns
+   the box and must not be allowed to grow it. */
+.dock-content .kit-pane:not(.fill):not(.kit-pane .kit-pane) {
+	overflow: visible;
+	height: auto;
+	min-height: 100%;
+}
+/* kit-provided content mode: fill both axes, preserve aspect (cover) */
+.dock-content[data-fit="cover"] {
+	overflow: hidden;
+}
+.dock-content[data-fit="cover"] > canvas,
+.dock-content[data-fit="cover"] > img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.dock-drop-preview {
+	position: fixed;
+	z-index: var(--dock-z-preview);
+	display: none;
+	pointer-events: none;
+	background: var(--dock-drop-tint);
+	border: var(--dock-divider) solid var(--dock-drop-border);
+	/* eases between zones; JS snaps it on first show so it never flies in */
+	transition:
+		left var(--tool-duration-press) var(--tool-ease-out),
+		top var(--tool-duration-press) var(--tool-ease-out),
+		width var(--tool-duration-press) var(--tool-ease-out),
+		height var(--tool-duration-press) var(--tool-ease-out);
+}
+
+.dock-empty {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: var(--dock-divider) dashed var(--tool-border);
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	text-align: center;
+	padding: var(--tool-space-4);
+}
+.dock-empty.drag-over {
+	border-color: var(--tool-accent);
+	color: var(--tool-accent);
+}
+
+/* floats hold a full tree; the window chrome is shadow + border only */
+.dock-float {
+	position: absolute;
+	z-index: var(--dock-z-float);
+	display: flex;
+	box-shadow: var(--dock-shadow);
+}
+.dock-float > .dock-leaf,
+.dock-float > .dock-split,
+.dock-float > .dock-group {
+	flex: 1;
+	min-width: 0;
+	min-height: 0;
+	border: var(--dock-divider) solid var(--tool-border);
+	overflow: hidden;
+}
+/* topmost float reads as focused by elevation alone — no accent border */
+.dock-float.front {
+	box-shadow: var(--dock-shadow-front);
+}
+.dock-float.shaded {
+	max-width: calc(100% - var(--dock-shaded-clamp)); /* shrink-to-tabs, clamped */
+}
+/* window grip — the only surface that MOVES the window (drags never
+   dock-assign from it). Left of the tabs: × affordances live right,
+   and the left edge stays put as tabs come and go. Sticky so it never
+   scrolls away with an overflowing strip. */
+.dock-float-grip {
+	position: sticky;
+	left: 0;
+	z-index: var(--dock-z-grip);
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	padding: var(--dock-pad) var(--dock-pad) var(--dock-pad-tight) var(--dock-pad);
+	cursor: grab;
+	color: var(--tool-muted);
+	background: var(--tool-bg);
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: none;
+}
+.dock-float-grip:hover {
+	color: var(--tool-text);
+}
+body:has(.dock-float.moving) {
+	cursor: grabbing;
+}
+.dock-float.moving .dock-float-grip {
+	cursor: grabbing;
+}
+/* invisible resize handles on every edge and corner — OS-window style */
+.dock-float-edge {
+	position: absolute;
+	z-index: var(--dock-z-spill);
+}
+.dock-float-edge[data-dir="n"] {
+	top: calc(-1 * var(--dock-float-edge-out));
+	left: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	right: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	height: var(--dock-float-edge);
+	cursor: ns-resize;
+}
+.dock-float-edge[data-dir="s"] {
+	bottom: calc(-1 * var(--dock-float-edge-out));
+	left: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	right: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	height: var(--dock-float-edge);
+	cursor: ns-resize;
+}
+.dock-float-edge[data-dir="e"] {
+	right: calc(-1 * var(--dock-float-edge-out));
+	top: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	bottom: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	width: var(--dock-float-edge);
+	cursor: ew-resize;
+}
+.dock-float-edge[data-dir="w"] {
+	left: calc(-1 * var(--dock-float-edge-out));
+	top: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	bottom: calc(var(--dock-float-corner) - var(--dock-float-edge-out));
+	width: var(--dock-float-edge);
+	cursor: ew-resize;
+}
+.dock-float-edge[data-dir="ne"] {
+	top: calc(-1 * var(--dock-float-edge-out));
+	right: calc(-1 * var(--dock-float-edge-out));
+	width: var(--dock-float-corner);
+	height: var(--dock-float-corner);
+	cursor: nesw-resize;
+}
+.dock-float-edge[data-dir="nw"] {
+	top: calc(-1 * var(--dock-float-edge-out));
+	left: calc(-1 * var(--dock-float-edge-out));
+	width: var(--dock-float-corner);
+	height: var(--dock-float-corner);
+	cursor: nwse-resize;
+}
+.dock-float-edge[data-dir="se"] {
+	bottom: calc(-1 * var(--dock-float-edge-out));
+	right: calc(-1 * var(--dock-float-edge-out));
+	width: var(--dock-float-corner);
+	height: var(--dock-float-corner);
+	cursor: nwse-resize;
+}
+.dock-float-edge[data-dir="sw"] {
+	bottom: calc(-1 * var(--dock-float-edge-out));
+	left: calc(-1 * var(--dock-float-edge-out));
+	width: var(--dock-float-corner);
+	height: var(--dock-float-corner);
+	cursor: nesw-resize;
+}
+
+/* no rAF loops anywhere in this kit — transitions only, and they die here */
+@media (prefers-reduced-motion: reduce) {
+	:where(.dock-stage),
+	:where(.dock-stage) *,
+	:where(.dock-stage) *::before,
+	:where(.dock-stage) *::after {
+		animation: none !important;
+		transition: none !important;
+	}
+}
+
+/* ── context menu ─────────────────────────────────────────────────────
+   Right-click chrome. Fixed to the viewport, not the stage, so it can
+   overhang a small dock; z above the drop preview so a menu opened mid
+   layout-fiddle is never buried. */
+/* The menu is the CONTROL KIT's (`controls/menu.css`), not a second one of
+   the dock's own. Its rules used to live here and `.kit-menu` restated them
+   for tools that raise a menu without a dock — two class names for one
+   object, which is exactly how the two came to disagree on radius, padding
+   and the tick gutter. `menu.ts` builds `.kit-menu` now, keeps every
+   `data-dev` selector, and this file states nothing about menus.
+   ([HUMAN] Sam 2026-09-05, aligning the signed dock to the control-kit
+   artifact.) */

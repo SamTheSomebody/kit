@@ -1,5 +1,7 @@
-node_modules/
-dist/
-.DS_Store
 *.log
+*.tgz
+.DS_Store
 components/tsconfig.tsbuildinfo
+dist/
+node_modules/
+package-lock.json

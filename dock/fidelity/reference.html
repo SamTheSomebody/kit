@@ -1,0 +1,1477 @@
+<!doctype html>
+<!--
+     FROZEN REFERENCE — the signed Dock Kit design artifact,
+     https://claude.ai/code/artifact/46ed9eea-e762-4d39-9227-956a2a163340
+     signed off by [HUMAN] Sam 2026-09-03 (tools/ui/STATUS.md), re-cut
+     2026-09-06 from the artifact as republished for Revision 5 — the
+     estate restyle: sentence-case labels, --dock-tab-tracking 0, and
+     radius retired on the float, its panes and the drop preview — so
+     this file and the component agree with no divergence outstanding.
+
+     Verbatim artifact document; only the claude.ai hosting shim (the
+     `frame-runtime` preamble and its reset) is stripped, since it is the
+     host page's, not the design's. DO NOT EDIT — this is the fidelity
+     comparison's other renderer. If the published artifact changes, the
+     sign-off re-opens (spec §Fidelity-check plan) and this file is re-cut
+     from it.
+-->
+<meta charset="utf-8">
+<title>Dock Kit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* ════════════════════════════════════════════════════════════════════
+     1 · tool-ui Dracula token freeze — verbatim from tools/ui/tokens.css.
+     Every chrome color below is one of these variables or a color-mix()
+     of one with transparent. Shadows are black-alpha (token candidate,
+     flagged for the design spec). No other hex exists in this file.
+     ════════════════════════════════════════════════════════════════════ */
+  :root{
+    --tool-bg:#282a36; --tool-panel:#21222c; --tool-panel-hover:#44475a;
+    --tool-accent:#bd93f9; --tool-accent-hover:#d6acff; --tool-highlight:#f1fa8c;
+    --tool-text:#f8f8f2; --tool-muted:#6272a4; --tool-danger:#ff5555;
+    --tool-success:#50fa7b; --tool-border:#44475a; --tool-radius:6px;
+    --tool-font:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --tool-space-1:4px; --tool-space-2:8px; --tool-space-3:12px; --tool-space-4:16px;
+    --tool-font-size-body:12px; --tool-font-size-title:18px;
+    --tool-duration-press:90ms; --tool-duration-fast:150ms;
+    --tool-ease-out:cubic-bezier(0.22,1,0.36,1);
+
+    /* ── dock-kit knobs — the component's CSS custom-property contract ── */
+    --dock-divider:1px;                 /* visible divider — VS Code sash */
+    --dock-grab:9px;                    /* invisible grab zone (≥ divider)*/
+    --dock-sash:3px;                    /* hover/drag accent bar width    */
+    --dock-min-pane:90px;               /* min pane size on divider drag  */
+    --dock-tab-h:26px;                  /* tab strip height, single-line:
+                                           12px type + 7px top + 5px bottom + 2px underline */
+    --dock-drop-tint:color-mix(in srgb,var(--tool-accent) 28%,transparent);
+    --dock-tab-dot:8px;                 /* tab status light diameter       */
+    --dock-tab-tracking:0;              /* tab letter-spacing — 0 since
+                                           titles went sentence case      */
+    --dock-tab-dot-pulse:1200ms;        /* `busy` pulse period             */
+    --dock-menu-min-w:180px;            /* context menu narrowest width    */
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--tool-bg);color:var(--tool-text);
+    font-family:var(--tool-font);font-size:var(--tool-font-size-body);overflow:hidden}
+  button{font-family:var(--tool-font);color:var(--tool-text)}
+  ::selection{background:var(--tool-accent);color:var(--tool-panel)}
+  button:focus-visible{outline:2px solid var(--tool-accent);outline-offset:1px}
+
+  /* final-usage shell: the kit alone fills the viewport */
+  #app{display:flex;flex-direction:column;height:100vh}
+  main{flex:1;display:flex;min-height:0}
+
+  /* ════════════════════════════════════════════════════════════════════
+     2 · DOCK KIT — this block is the component's CSS contract.
+     Class names and nesting here are what the implementation must ship.
+
+       .dock-stage                      positioned host; tree fills it
+         .dock-root                     tree mount (flex, edge-to-edge)
+           .dock-split.row|.col         split node
+             <a> .dock-divider <b>      children + divider, in order
+           .dock-leaf                   tab group
+             .dock-tabstrip             single-line, scrolls on overflow
+               .dock-tab[.on]           draggable; .dock-tab-label,
+                                        .dock-tab-close (consumer-gated)
+             .dock-body
+               .dock-content[data-fit="cover"]   consumer content
+           .dock-empty                  empty-root drop target
+         .dock-float                    floating window (a TREE inside)
+           .dock-float-grip             window move handle (in 1st strip)
+           .dock-float-edge[data-dir]   8 resize handles: n s e w + corners
+       .dock-insert                     strip insertion indicator
+       .dock-drop-preview               translucent drop-region overlay
+     ════════════════════════════════════════════════════════════════════ */
+  .dock-stage{flex:1;min-width:0;position:relative;background:var(--tool-bg)}
+
+  .dock-root{width:100%;height:100%;display:flex;min-width:0;min-height:0}
+  .dock-root>*{flex:1 1 0;min-width:0;min-height:0}
+
+  .dock-split{display:flex;min-width:0;min-height:0}
+  .dock-split.row{flex-direction:row}
+  .dock-split.col{flex-direction:column}
+  .dock-split>*{min-width:0;min-height:0}
+
+  /* VS Code sash: 1px hairline, wider invisible grab zone, accent bar on hover */
+  .dock-divider{flex:0 0 var(--dock-divider);position:relative;z-index:5;
+    background:var(--tool-border)}
+  .dock-split.row>.dock-divider{cursor:col-resize}
+  .dock-split.col>.dock-divider{cursor:row-resize}
+  .dock-divider::before{content:"";position:absolute}      /* wider grab zone */
+  .dock-split.row>.dock-divider::before{inset:0 calc((var(--dock-divider) - var(--dock-grab))/2)}
+  .dock-split.col>.dock-divider::before{inset:calc((var(--dock-divider) - var(--dock-grab))/2) 0}
+  .dock-divider::after{content:"";position:absolute;background:var(--tool-accent);
+    opacity:0;pointer-events:none;
+    /* short delay on hover so mousing across panes doesn't flicker accents */
+    transition:opacity var(--tool-duration-fast) var(--tool-ease-out) 120ms}
+  .dock-split.row>.dock-divider::after{inset:0 calc((var(--dock-divider) - var(--dock-sash))/2)}
+  .dock-split.col>.dock-divider::after{inset:calc((var(--dock-divider) - var(--dock-sash))/2) 0}
+  .dock-divider:hover::after,.dock-divider.active::after,
+  .dock-divider:focus-visible::after{opacity:1}
+  .dock-divider.active::after,.dock-divider:focus-visible::after{transition-delay:0ms}
+  .dock-divider.active,.dock-divider:focus-visible{outline:none}
+  body.tab-drag .dock-divider{pointer-events:none}         /* drops pass to panes */
+  body.resizing{user-select:none;-webkit-user-select:none}
+  body.resizing *{cursor:inherit}
+
+  /* docked leaves are borderless — the 1px sash is the only separator */
+  .dock-leaf{display:flex;flex-direction:column;min-width:0;min-height:0;
+    background:var(--tool-panel);overflow:hidden}
+
+  /* when the layout is down to ONE pane with one tab (the root leaf —
+     e.g. a dev game as the sole base pane), it has NO tab heading at all,
+     hover included: content owns the stage. A drop on the body joins as
+     a second tab and the strip returns with it. */
+  .dock-leaf.solo>.dock-tabstrip{display:none}
+
+  /* accordion: clicking the active tab collapses a leaf to its strip.
+     Collapsed tabs read INACTIVE (no accent, no fused bg) and still scroll. */
+  .dock-leaf.collapsed>.dock-body{display:none}
+  .dock-leaf.collapsed>.dock-tabstrip{border-bottom:0}
+  .dock-leaf.collapsed .dock-tab,
+  .dock-leaf.collapsed .dock-tab.on{background:none;color:var(--tool-muted);
+    border-block-end-color:transparent}
+  .dock-leaf.collapsed .dock-tab:hover{color:var(--tool-text)}
+  /* collapsed tabs reveal their × on hover/focus only — never at rest */
+  .dock-leaf.collapsed .dock-tab.on .dock-tab-close{opacity:0}
+  .dock-leaf.collapsed .dock-tab:hover .dock-tab-close,
+  .dock-leaf.collapsed .dock-tab:focus-visible .dock-tab-close{opacity:1}
+  .dock-split.col>.dock-leaf.collapsed,
+  .dock-root>.dock-leaf.collapsed{flex:0 0 auto !important}
+
+  /* row-split collapse: expander stub, glyph only — [HUMAN] Sam pick
+     2026-09-02. Col-split collapse keeps the horizontal 26px strip. */
+  .dock-collapsed-stub{display:none;flex:1;flex-direction:column;align-items:center;
+    justify-content:center;background:var(--tool-bg);border:0;cursor:pointer;
+    color:var(--tool-muted);font-size:var(--tool-font-size-body);
+    font-family:var(--tool-font)}
+  .dock-collapsed-stub:hover{color:var(--tool-text)}
+  .dock-split.row>.dock-leaf.collapsed{flex:0 0 var(--dock-tab-h) !important}
+  .dock-split.row>.dock-leaf.collapsed>.dock-tabstrip{display:none}
+  .dock-split.row>.dock-leaf.collapsed>.dock-collapsed-stub{display:flex}
+
+  /* ── ANY fully-collapsed split renders as ONE group on its parent's
+     axis — [HUMAN] Sam pick 2026-09-02. A horizontal bar is STRUCTURAL:
+     one cell per child in tree order (leaf → one clickable title per
+     tab, nested split → ▸), 1px dividers between; each cell reopens its
+     own side. A vertical rail is a single ▸ (reopen last-collapsed). ── */
+  /* all collapsed chrome sits on the lighter strip tint (--tool-bg) */
+  .dock-group{background:var(--tool-bg);border:0;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--tool-muted);font-family:var(--tool-font);
+    font-size:var(--tool-font-size-body)}
+  .dock-group.row{width:var(--dock-tab-h);cursor:pointer}
+  .dock-group.row:hover{color:var(--tool-text)}
+  /* the bar shows every tab untruncated and scrolls like a strip when
+     the split width is reached (hidden scrollbar · wheel · shadow fades) */
+  .dock-group.col{height:var(--dock-tab-h);justify-content:flex-start;
+    align-items:stretch;padding:0;font-size:var(--tool-font-size-body);
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  .dock-group.col::-webkit-scrollbar{display:none}
+  .dock-group-cell{flex:none;display:flex;align-items:stretch;gap:0;
+    background:none;border:0;
+    border-right:1px solid var(--tool-border);padding:0;cursor:pointer;
+    color:var(--tool-muted);font-family:var(--tool-font);
+    font-size:var(--tool-font-size-body);
+    letter-spacing:var(--dock-tab-tracking);line-height:1;
+    white-space:nowrap}
+  /* a leaf cell lists its pane's tabs; each title is clickable on its
+     own (reopen + select). Bar tabs use the SAME box as strip tabs —
+     7px left/top/gap, 5px right (× side-bearing), 7px visual bottom —
+     with the half-height separators between titles. */
+  .dock-group-tab{position:relative;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;
+    padding:7px 5px 7px 7px}
+  .dock-group-tab:hover{color:var(--tool-text)}
+  .dock-group-tab+.dock-group-tab::before{content:"";position:absolute;
+    left:0;top:50%;transform:translateY(-50%);
+    height:calc(var(--dock-tab-h)/2);width:1px;background:var(--tool-border)}
+  /* every bar tab carries its own hover-revealed × closing that tab —
+     exactly the collapsed-strip rule; vertical ▸ forms have no × */
+  .dock-group-tab:hover .dock-tab-close{opacity:1}
+
+  .dock-divider.disabled{pointer-events:none}
+
+  .dock-tabstrip{flex:none;height:var(--dock-tab-h);display:flex;align-items:stretch;
+    position:relative;background:var(--tool-bg);border-bottom:1px solid var(--tool-border);
+    overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
+  .dock-tabstrip::-webkit-scrollbar{display:none}
+
+  /* ── strip overflow — hidden scrollbar; a divider-colored edge fade marks
+     clipped tabs, hovering it reveals a paging chevron (no button chrome).
+     [HUMAN] Sam picked fade + hover-chevron, 2026-09-02. */
+  .dock-spill{position:sticky;flex:none;width:0;z-index:3;pointer-events:none}
+  .dock-spill.l{left:0}.dock-spill.r{right:0}
+  /* edge zone = tab rhythm: 7px each side of the ~7px glyph */
+  .dock-spill i,.dock-spill button{display:none;position:absolute;top:0;bottom:0;width:21px}
+  .dock-spill i{pointer-events:none}
+  .dock-spill.l i,.dock-spill.l button{left:0}
+  .dock-spill.r i,.dock-spill.r button{right:0}
+  /* panel shadow fade — clipped tabs dim into the edge rather than
+     picking up a foreign colour band */
+  .dock-spill.l i{background:linear-gradient(90deg,var(--tool-panel),transparent)}
+  .dock-spill.r i{background:linear-gradient(270deg,var(--tool-panel),transparent)}
+  .dock-spill button{border:0;padding:0;background:none;cursor:pointer;
+    pointer-events:auto;color:transparent;
+    font-size:var(--tool-font-size-body);line-height:1;
+    align-items:center;justify-content:center;
+    transition:color var(--tool-duration-fast) var(--tool-ease-out)}
+  .dock-spill button:hover,.dock-spill button:focus-visible{color:var(--tool-text)}
+  .can-l>.dock-spill.l i{display:block}
+  .can-r>.dock-spill.r i{display:block}
+  .can-l>.dock-spill.l button{display:flex}
+  .can-r>.dock-spill.r button{display:flex}
+
+  /* 7px rhythm: left/top and label↔close gap match the bottom's visual
+     space (5px pad + 2px underline reserve = 7px). Trailing padding is
+     5px — the × glyph's side-bearing makes 7px read wider than it is,
+     so 5px balances the ×↔separator↔next-char cluster optically. */
+  .dock-tab{flex:none;display:inline-flex;align-items:center;gap:7px;
+    position:relative;
+    background:none;border:0;border-block-end:2px solid transparent;
+    padding:7px 5px 5px 7px;line-height:1;cursor:pointer;
+    font-size:var(--tool-font-size-body);
+    letter-spacing:var(--dock-tab-tracking);color:var(--tool-muted);max-width:160px;
+    transition:color var(--tool-duration-fast) var(--tool-ease-out)}
+  .dock-tab:hover{color:var(--tool-text)}
+  /* half-height centered separator between adjacent tabs — suppressed
+     on both edges of the active tab in EXPANDED strips only; a collapsed
+     strip reads fully inactive, so its separators all stay */
+  .dock-tab+.dock-tab::before{content:"";position:absolute;left:0;
+    top:50%;transform:translateY(-50%);height:50%;width:1px;
+    background:var(--tool-border)}
+  .dock-leaf:not(.collapsed) .dock-tab.on::before,
+  .dock-leaf:not(.collapsed) .dock-tab.on+.dock-tab::before{display:none}
+  /* active tab fuses with the pane body: panel bg + accent underline */
+  .dock-tab.on{color:var(--tool-text);background:var(--tool-panel);
+    border-block-end-color:var(--tool-accent)}
+  .dock-tab:focus-visible{outline:2px solid var(--tool-accent);outline-offset:-2px}
+  .dock-tab.dragging{opacity:.35}
+  /* status light: severity in, palette out. `busy` pulses — a CSS
+     animation, not a rAF loop, and reduced-motion below stops it dead.
+     It exists because a tab title is a plain string: a consumer cannot
+     colour part of one, so a pane of running jobs needs the kit to say
+     whether each is alive, finished or failed. */
+  .dock-tab-dot{flex:none;width:var(--dock-tab-dot);height:var(--dock-tab-dot);
+    border-radius:50%;background:var(--tool-muted)}
+  .dock-tab-dot[data-status="busy"]{background:var(--tool-accent);
+    animation:dock-tab-pulse var(--dock-tab-dot-pulse) ease-in-out infinite}
+  .dock-tab-dot[data-status="ok"]{background:var(--tool-success)}
+  .dock-tab-dot[data-status="warn"]{background:var(--tool-highlight)}
+  .dock-tab-dot[data-status="danger"]{background:var(--tool-danger)}
+  @keyframes dock-tab-pulse{50%{opacity:.35}}
+
+  /* context menu — the kit's own, because no browser lets a page add rows
+     to the NATIVE one. Everything structural lives here, so it costs no
+     pixels until asked. Parented to the STAGE, never body: the --dock-*
+     vars are written per stage, so a menu elsewhere gets none of them. */
+  .dock-menu{position:fixed;z-index:90;min-width:var(--dock-menu-min-w);
+    padding:5px 0;border:1px solid var(--tool-border);
+    border-radius:var(--tool-radius);background:var(--tool-panel);
+    box-shadow:0 12px 36px rgba(0,0,0,.55);
+    font-family:var(--tool-font);font-size:var(--tool-font-size-body)}
+  .dock-menu-item{display:flex;align-items:center;gap:7px;width:100%;
+    border:0;background:none;padding:5px 7px;cursor:pointer;text-align:left;
+    color:var(--tool-text);font-family:inherit;font-size:inherit;line-height:1}
+  .dock-menu-item:hover:not(:disabled),
+  .dock-menu-item:focus-visible:not(:disabled){background:var(--tool-panel-hover);outline:none}
+  .dock-menu-item:disabled{cursor:default;color:var(--tool-muted);opacity:.55}
+  .dock-menu-caret{margin-left:auto;color:var(--tool-muted)}
+  .dock-menu-rule{margin:5px 0;border-top:1px solid var(--tool-border)}
+
+  .dock-tab-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* close reveals on hover/active/focus; opacity keeps the hit target stable.
+     Sized by the label's own type — no box of its own */
+  .dock-tab-close{flex:none;font-size:inherit;line-height:1;
+    color:var(--tool-muted);opacity:0;
+    transition:opacity var(--tool-duration-fast) var(--tool-ease-out)}
+  .dock-tab:hover .dock-tab-close,.dock-tab.on .dock-tab-close,
+  .dock-tab:focus-visible .dock-tab-close{opacity:1}
+  .dock-tab-close:hover{color:var(--tool-danger)}
+
+  .dock-insert{position:absolute;top:4px;bottom:4px;width:2px;
+    background:var(--tool-accent);pointer-events:none;z-index:2}
+
+  .dock-body{flex:1;min-height:0;position:relative;overflow:hidden}
+  /* 4px scrollbar, thumb blends until hovered */
+  .dock-content{position:absolute;inset:0;overflow:auto;scrollbar-width:thin;
+    scrollbar-color:color-mix(in srgb,var(--tool-border) 55%,transparent) transparent}
+  .dock-content:hover{scrollbar-color:var(--tool-border) transparent}
+  .dock-content::-webkit-scrollbar{width:4px}
+  .dock-content::-webkit-scrollbar-thumb{border-radius:2px;
+    background:color-mix(in srgb,var(--tool-border) 55%,transparent)}
+  .dock-content:hover::-webkit-scrollbar-thumb{background:var(--tool-border)}
+  /* kit-provided content mode: fill both axes, preserve aspect (cover) */
+  .dock-content[data-fit="cover"]{overflow:hidden}
+  .dock-content[data-fit="cover"]>canvas,
+  .dock-content[data-fit="cover"]>img{position:absolute;inset:0;
+    width:100%;height:100%;object-fit:cover;display:block}
+
+  .dock-drop-preview{position:fixed;z-index:60;display:none;pointer-events:none;
+    background:var(--dock-drop-tint);
+    border:1px solid color-mix(in srgb,var(--tool-accent) 70%,transparent);
+    /* eases between zones; JS snaps it on first show so it never flies in */
+    transition:left var(--tool-duration-press) var(--tool-ease-out),
+      top var(--tool-duration-press) var(--tool-ease-out),
+      width var(--tool-duration-press) var(--tool-ease-out),
+      height var(--tool-duration-press) var(--tool-ease-out)}
+
+  .dock-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    border:1px dashed var(--tool-border);
+    color:var(--tool-muted);font-size:var(--tool-font-size-body);text-align:center;
+    padding:var(--tool-space-4)}
+  .dock-empty.drag-over{border-color:var(--tool-accent);color:var(--tool-accent)}
+
+  /* floats hold a full tree; the window chrome is shadow + border only */
+  .dock-float{position:absolute;z-index:20;display:flex;
+    box-shadow:0 6px 18px rgba(0,0,0,.35)}       /* shadow: black-alpha, see spec */
+  .dock-float>.dock-leaf,.dock-float>.dock-split,.dock-float>.dock-group{
+    flex:1;min-width:0;min-height:0;
+    border:1px solid var(--tool-border);
+    overflow:hidden}
+  /* topmost float reads as focused by elevation alone — no accent border */
+  .dock-float.front{box-shadow:0 12px 36px rgba(0,0,0,.55)}
+  .dock-float.shaded{max-width:calc(100% - 8px)}  /* shrink-to-tabs, clamped */
+  /* window grip — the only surface that MOVES the window (drags never
+     dock-assign from it). Left of the tabs: × affordances live right,
+     and the left edge stays put as tabs come and go. Sticky so it never
+     scrolls away with an overflowing strip. */
+  .dock-float-grip{position:sticky;left:0;z-index:4;flex:none;
+    display:inline-flex;align-items:center;padding:7px 7px 5px 7px;
+    cursor:grab;color:var(--tool-muted);background:var(--tool-bg);
+    font-size:var(--tool-font-size-body);line-height:1;
+    user-select:none;-webkit-user-select:none;touch-action:none}
+  .dock-float-grip:hover{color:var(--tool-text)}
+  body:has(.dock-float.moving){cursor:grabbing}
+  .dock-float.moving .dock-float-grip{cursor:grabbing}
+  /* invisible resize handles on every edge and corner — OS-window style */
+  .dock-float-edge{position:absolute;z-index:3}
+  .dock-float-edge[data-dir="n"]{top:-3px;left:8px;right:8px;height:7px;cursor:ns-resize}
+  .dock-float-edge[data-dir="s"]{bottom:-3px;left:8px;right:8px;height:7px;cursor:ns-resize}
+  .dock-float-edge[data-dir="e"]{right:-3px;top:8px;bottom:8px;width:7px;cursor:ew-resize}
+  .dock-float-edge[data-dir="w"]{left:-3px;top:8px;bottom:8px;width:7px;cursor:ew-resize}
+  .dock-float-edge[data-dir="ne"]{top:-3px;right:-3px;width:11px;height:11px;cursor:nesw-resize}
+  .dock-float-edge[data-dir="nw"]{top:-3px;left:-3px;width:11px;height:11px;cursor:nwse-resize}
+  .dock-float-edge[data-dir="se"]{bottom:-3px;right:-3px;width:11px;height:11px;cursor:nwse-resize}
+  .dock-float-edge[data-dir="sw"]{bottom:-3px;left:-3px;width:11px;height:11px;cursor:nesw-resize}
+
+  /* ── demo consumer content (NOT part of the kit contract) ─────────── */
+  .demo-rows{padding:var(--tool-space-2)}
+  .demo-row{display:flex;align-items:center;gap:8px;padding:5px 8px;
+    border-radius:4px;font-size:var(--tool-font-size-body);min-width:0}
+  .demo-row:hover{background:var(--tool-panel-hover)}
+  .demo-row .k{color:var(--tool-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .demo-row .m{margin-left:auto;color:var(--tool-muted);font-size:var(--tool-font-size-body);
+    white-space:nowrap;flex:none}
+  .demo-row .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--tool-muted)}
+  .demo-row .dot.ok{background:var(--tool-success)}
+  .demo-row .dot.hot{background:var(--tool-accent)}
+  .demo-row .sw{flex:none;width:26px;height:18px;border-radius:3px;
+    border:1px solid var(--tool-border);overflow:hidden;position:relative}
+  .demo-row .sw canvas{position:absolute;inset:0;width:100%;height:100%}
+  .demo-log{padding:var(--tool-space-2) var(--tool-space-3);
+    font-size:var(--tool-font-size-body);line-height:1.8;color:var(--tool-text)}
+  .demo-log .t{color:var(--tool-muted)}
+  .demo-log .ok{color:var(--tool-success)} .demo-log .warn{color:var(--tool-highlight)}
+  .demo-board{position:absolute;inset:0;display:block;width:100%;height:100%}
+
+  /* no rAF loops anywhere in this file — transitions only, and they die here */
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important}
+  }
+</style>
+
+<!-- final-usage view: the kit alone, full viewport. The demo chrome
+     (header · external tray · inspector · footer) was removed at
+     [HUMAN] Sam's request 2026-09-02; the contract below is kept as
+     a comment — it is the DOM / token / interaction spec.
+
+     REVISIONS since the 2026-09-03 sign-off, all [HUMAN] Sam, all in
+     `docs/specs/2026-09-03-dock-kit-design.md` §Revisions:
+       1 · a group bar's empty-area drop lands on the bar's own axis
+           (row, beside) instead of a col below it
+       2 · a fully-collapsed split merges into one group only across
+           axes; same-axis splits keep a chevron each
+       3 · dbl-click / Enter space the whole axis evenly, not one
+           divider to 50/50
+       4 · tab status lights, and the right-click menu with
+           path-declared submenus (see MENU below)
+       5 · 2026-09-06 · the estate restyle, published back here so
+           this document and the component agree again. THREE
+           changes, all presentation, no rule touched:
+             · labels are SENTENCE CASE across the dock and console
+               kits — the demo registry below is re-cased with them
+               (its content rows too: the two registries have to
+               agree exactly, or the fidelity hashes diverge on
+               text that is nobody's rule)
+             · tab tracking is a TOKEN now, --dock-tab-tracking,
+               and its value is 0 — .06em was set for the caps
+               that are gone
+             · radius retired on the float, its panes and the drop
+               preview ([HUMAN] Sam 2026-09-05: "none of the tools
+               should have the card styles"). The context menu
+               keeps its radius — it is a control-kit surface
+
+     DOM / TOKEN CONTRACT
+<b>.dock-stage</b>                 host — tree fills it edge-to-edge
+ <b>.dock-root</b>                 tree mount
+  <b>.dock-split.row|.col</b>      children: a, .dock-divider, b
+  <b>.dock-leaf</b>                tab group
+   <b>.dock-tabstrip</b>           single-line · overflow: fade+chevron
+    <b>.dock-spill.l|.r</b>         sticky: panel shadow fade · ‹› hover
+                               21px zone (7px tab rhythm) · chevron
+                               = prev/next tab · active centers
+    <b>.dock-collapsed-stub</b>     row-collapsed pane: ▸ expander;
+                               accepts drops (join + open)
+    <b>.dock-tab[.on]</b>          draggable · optional .dock-tab-dot
+                               status light · label + gated close
+   <b>.dock-body</b> › <b>.dock-content[data-fit=cover]</b>
+  <b>.dock-empty</b>               empty-root drop target
+ <b>.dock-float</b> › a full TREE (split/leaf/group) +
+   <b>.dock-float-grip</b> (in the first strip/bar) +
+   <b>.dock-float-edge[data-dir]</b>×8
+<b>.dock-insert</b> · <b>.dock-drop-preview</b>  (indicators)
+<b>.dock-menu</b> › <b>.dock-menu-item</b>[.dock-menu-caret] · <b>.dock-menu-rule</b>
+                               right-click, parented to the stage
+
+TOKENS ─ --dock-divider 1px + --dock-sash 3px · --dock-grab 9px
+--dock-min-pane 90px · --dock-tab-h 26px · --dock-drop-tint accent@28%
+--dock-tab-tracking 0 (tab + group-cell letter-spacing) · the float,
+  its panes and the drop preview are SQUARED — no radius
+tab box: 7px left/top/gap · 5px right (× side-bearing) · 5px+2px
+  underline reserve bottom · GROUP-BAR tabs use the same box
+  (7px 5px 7px 7px — no underline) · half-height 1px separators
+
+RULES ─ MODEL · binary tree of splits {split,ratio,a,b} and leaves
+{id,tabs,active,collapsed:<collapse seq №>}; floats {id,x,y,w,h,z,root}
+each hold a FULL tree of their own; tab ids → consumer registry.
+
+TABS · a tab may carry a STATUS light (busy/ok/warn/danger — busy
+pulses in the accent; a title is a plain string, so colour has to be
+the kit's job) and a menuPath, its folder under "Open tab" ·
+click selects (and expands); active-tab click collapses ·
+every tab draggable + closable (consumer may gate) · × on
+hover/active/focus; middle-click closes; last tab out removes the
+pane, sibling absorbs · one strip line always; overflow = hidden
+scrollbar + panel shadow fades + hover chevron (prev/next select,
+end re-selects) · active tab re-centers on select, never on scroll.
+
+SPLITS · sash 1px/9px grab/3px accent (120ms hover delay) · drag
+clamps at --dock-min-pane · dbl-click/Enter space EVERY pane on that
+divider's axis evenly (50/50 at two, a third each at three, 1/N at N
+— the run is the maximal span of same-axis splits, so any divider in
+a row means the same thing; splits across the axis are one pane and
+keep their ratios) · arrows ±2% · drops split at ratio .5 · a
+collapsed side is fixed, sibling grows.
+
+COLLAPSE · col-parent → 26px bar (inactive tabs, still scroll) ·
+row-parent → ▸ stub · recursive: a fully-collapsed split renders as
+ONE group on its parent axis — bar (col) or ▸ rail (row) — but ONLY
+when its own axis is PERPENDICULAR to that parent's; same-axis splits
+never merge (the parent already lays them out, and merging would put
+"ref a | ref b" under one chevron) · bar is
+STRUCTURAL: cells in tree order, and row-nesting FLATTENS — its
+panes already read left-to-right, so every leaf at any row-depth
+gets its own title cell ("ref a | ref b | log"); only a nested COL
+split (a vertical stack) is one bare ▸ cell
+(no ×) · a leaf cell lists every tab (title click = reopen on that
+tab · hover-× closes it) · rail = single ▸, reopens last-collapsed ·
+strip/bar EMPTY-AREA click: leaf strips toggle, a group bar's empty
+area reopens its last-collapsed pane · collapsed strips keep ALL
+tab separators (the active tab is styled inactive there) ·
+GUARD (docked tree only): ≥1 expanded pane — collapsing the last
+open pane reopens the previously-collapsed (single leaf: refused);
+floats are exempt — fully collapsed float = shaded window.
+
+DRAG SOURCES · a tab (strip or bar) → "tab" · strip empty area,
+▸ stub, leaf-cell padding → "pane" (all tabs, order+active kept) ·
+▸ cell, bar empty area, ▸ rail → "tree" (whole subtree) · float
+strips are ordinary strips (identical drags); only the window GRIP
+moves a float without dock-assigning · external → "ext" (dataTransfer
+"application/x-dock-external", effectAllowed copyMove — a dropEffect
+outside effectAllowed cancels the drop).
+
+DROP TARGETS (precedence) · 1 root band: outer 12px of the stage
+(24px with ⇧) → root split at .5; over strips/bars it needs ⇧ ·
+2 ⇧ anywhere else → force float (340×240 ghost at pointer) ·
+3 strip → join at pointer index (insert bar); own strip = reorder ·
+4 body → 30% edge bands split l/r/t/b, centre joins — floats
+included (a float is a tree; edge drops split INSIDE it) ·
+5 collapsed chrome (stub/cell/rail, and a lone collapsed strip) →
+join its side + open; the group bar's EMPTY area instead always
+makes a NEW pane BESIDE the group — a row split, on the bar's own
+axis, landing expanded (a col split would flatten back into the bar
+as a peer cell while the tree said it sat below) — joining is the
+cells' job (payloads from inside the group: no-op) ·
+6 empty layout → become the root.
+
+PAYLOAD LANDING · tab/pane/ext land as tabs (join) or a new leaf ·
+"tree" splices in WHOLE on structural targets (edge/root/empty/⇧-
+float — splits survive) and flattens to tabs in tree order on joins
+(active = most recently collapsed leaf's) · self-drops are no-ops ·
+everything a drop touches lands EXPANDED — collapsed survives only
+unassigned.
+
+FLOATS · a full binary tree; strips behave exactly like docked
+strips (tabs drag, empty area drags the pane + click-toggles shade) ·
+the GRIP (⠿, left of the first strip's tabs, visible expanded and
+shaded) pointer-moves the window and never docks · resize on 8
+invisible edges/corners, disabled while shaded · fully-collapsed
+root = .shaded: window shrinks to its bar/strip (w/h kept) ·
+topmost = .front (elevation only) · root solo pane (root leaf,
+one tab, docked) hides its strip entirely.
+
+MENU · right-click anywhere on the dock. No browser lets a page add
+rows to the NATIVE menu, so this is ours over a prevented default;
+everything structural lives here rather than as visible chrome. On a
+tab: Close · Close others · Float · Split right · Split down (the
+splits land exactly where a drag on that edge would). On a pane:
+Collapse/Expand. Everywhere: Open tab, listing tabs that sit in no
+pane — the only way back from closing one. Rows are declared as
+file-system style PATHS ("Open tab/Tools/Sim") and the folders are
+assembled from them, so contributors stay flat and two of them land
+in the same submenu just by naming it. Consumers append their own
+rows, which is how a tool adds "save this layout as my default"
+without the kit learning what persistence is.
+
+SERIALIZED · {v, layout, floating:[{id,x,y,w,h,z,root}]} — tab ids
+only; the tab registry stays consumer-owned · "collapsed" holds the
+collapse sequence № so "most recently collapsed" survives reload ·
+hydrate PRUNES ids the registry no longer knows: a stored layout
+outlives the tabs it names, and a dead id would keep holding a pane
+and could be the active one. Emptied leaves detach, sibling absorbs.
+-->
+<div id="app">
+  <main>
+    <div class="dock-stage" id="stage">
+      <div class="dock-root" id="dockRoot"></div>
+    </div>
+  </main>
+</div>
+
+<div class="dock-drop-preview" id="dropPreview"></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const T=getComputedStyle(document.documentElement);
+const tok=n=>T.getPropertyValue("--tool-"+n).trim();
+const DIVIDER=1, MIN_PANE=90, EDGE_BAND=0.3, ROOT_BAND=12;  /* contract constants */
+
+/* ══ 1 · tab registry — consumer-owned; the kit sees ids only ═══════════ */
+function rows(items){const w=document.createElement("div");w.className="demo-rows";
+  items.forEach(([dot,k,m])=>{const r=document.createElement("div");r.className="demo-row";
+    r.innerHTML=`<span class="dot ${dot}"></span><span class="k">${k}</span><span class="m">${m}</span>`;
+    w.append(r)});return w}
+
+function paintBoard(cv){
+  cv.width=640;cv.height=420;const x=cv.getContext("2d");
+  x.fillStyle=tok("panel");x.fillRect(0,0,640,420);
+  const cw=104,ch=104,ox=(640-5*cw-4*8)/2,oy=(420-3*ch-2*8)/2;
+  for(let c=0;c<5;c++)for(let r=0;r<3;r++){
+    const px=ox+c*(cw+8),py=oy+r*(ch+8);
+    x.fillStyle=tok("bg");x.strokeStyle=tok("border");
+    x.beginPath();x.roundRect(px,py,cw,ch,8);x.fill();x.stroke();
+    const kind=(c*3+r)%4;x.save();x.translate(px+cw/2,py+ch/2);
+    if(kind===0){x.fillStyle=tok("accent");x.beginPath();x.arc(0,0,26,0,7);x.fill()}
+    else if(kind===1){x.strokeStyle=tok("muted");x.lineWidth=5;
+      x.strokeRect(-24,-24,48,48)}
+    else if(kind===2){x.fillStyle=tok("highlight");x.beginPath();
+      x.moveTo(0,-28);x.lineTo(26,0);x.lineTo(0,28);x.lineTo(-26,0);x.fill()}
+    else{x.strokeStyle=tok("success");x.lineWidth=5;x.beginPath();x.arc(0,0,24,0,7);x.stroke()}
+    x.restore()}
+  x.fillStyle=tok("muted");x.font="12px "+tok("font");
+  x.fillText("board preview — consumer-rendered content, kit owns chrome only",ox,412);
+}
+function paintRef(cv,hue){                    /* stand-in for a reference image */
+  cv.width=480;cv.height=300;const x=cv.getContext("2d");
+  const g=x.createLinearGradient(0,0,480,300);
+  g.addColorStop(0,`hsl(${hue},52%,24%)`);g.addColorStop(1,`hsl(${hue+30},58%,52%)`);
+  x.fillStyle=g;x.fillRect(0,0,480,300);
+  let s=hue;const rnd=()=>((s=s*16807%2147483647)/2147483647);
+  x.fillStyle="rgba(40,42,54,.35)";
+  for(let i=0;i<9;i++)x.fillRect(rnd()*440,rnd()*270,34,18);
+  x.fillStyle="rgba(248,248,242,.28)";
+  x.beginPath();x.arc(80+rnd()*320,60+rnd()*180,34,0,7);x.fill();
+}
+const coverTab=hue=>el=>{const cv=document.createElement("canvas");paintRef(cv,hue);el.append(cv)};
+
+const TABS={
+  game:{title:"Game",render:el=>{const cv=document.createElement("canvas");
+    cv.className="demo-board";paintBoard(cv);el.append(cv)}},
+  timeline:{title:"Timeline",render:el=>el.append(rows([
+    ["hot","round · featureStart","fence base"],["ok","spin ×10 · reveal","free spins"],
+    ["ok","step · winInfo","tumble"],["ok","step · tumbleBoard","→ no win"],
+    ["","setGlobalMultiplier","x2 → x3"],["","setSpinWin · setCounter",""],
+    ["hot","featureEnd · finalWin","cap 5000x"]]))},
+  config:{title:"Config",render:el=>el.append(rows([
+    ["ok","rtp","0.9700"],["ok","wincap","5000x"],["","mechanic","tumble"],
+    ["","base board","5×3 · cost 1"],["","bonus buy","6×4 · cost 100"]]))},
+  assets:{title:"Assets",render:el=>{const w=rows([]);
+    [["symbol_gem",266],["symbol_torch",36],["frame_ice",204],["bg_vault",212],["wild_aurora",290]]
+    .forEach(([n,h])=>{const r=document.createElement("div");r.className="demo-row";
+      const sw=document.createElement("span");sw.className="sw";
+      const cv=document.createElement("canvas");paintRef(cv,h);sw.append(cv);
+      r.append(sw);const k=document.createElement("span");k.className="k";k.textContent=n;
+      const m=document.createElement("span");m.className="m";m.textContent="4.3";r.append(k,m);w.append(r)});
+    el.append(w)}},
+  paytable:{title:"Paytable",render:el=>el.append(rows([
+    ["","gem ×5","50.0"],["","gem ×4","12.5"],["","torch ×5","25.0"],
+    ["","torch ×4","6.0"],["","scatter ×3","bonus"]]))},
+  fences:{title:"Fences",render:el=>el.append(rows([
+    ["ok","base","rtp 0.967"],["ok","bonus","rtp 0.970"],["","superbuy","pending"]]))},
+  books:{title:"Books",render:el=>el.append(rows([
+    ["ok","books_base.jsonl","100k"],["ok","books_bonus.jsonl","50k"],["","sample-books","linked"]]))},
+  sim:{title:"Sim",render:el=>el.append(rows([
+    ["ok","spins","10,000,000"],["ok","measured rtp","0.96998"],["","acceptance","0.83"]]))},
+  notes:{title:"Notes",render:el=>el.append(rows([
+    ["","overflow demo","this strip scrolls"],["","single-line rule","never wraps"]]))},
+  log:{title:"Log",render:el=>{const w=document.createElement("div");w.className="demo-log";
+    w.innerHTML=`<div><span class="t">14:02:11</span> shell mounted · DEV</div>
+<div><span class="t">14:02:11</span> <span class="ok">timeline panel docked</span></div>
+<div><span class="t">14:02:12</span> layout editor attached (?layout)</div>
+<div><span class="t">14:02:14</span> <span class="warn">this window floats — drag its ⠿ grip to move</span></div>
+<div><span class="t">14:02:15</span> its strip works like any other: drag tabs or the pane to re-dock</div>`;el.append(w)}},
+  "ref-a":{title:"Ref A",fit:"cover",menuPath:"Reference",render:coverTab(204)},
+  "ref-b":{title:"Ref B",fit:"cover",menuPath:"Reference",render:coverTab(36)},
+};
+/* `status` is a tab's light; `menuPath` is the folder it falls into under
+   the menu's "Open tab", without touching the label its strip shows. */
+TABS.log.status="busy";TABS.sim.status="ok";TABS.fences.status="warn";
+["timeline","config","assets","paytable","fences","books","sim","notes"]
+  .forEach(id=>{TABS[id].menuPath="Tools"});
+let extN=0;
+function makeExtTab(hue){extN++;const id="ext"+extN;
+  TABS[id]={title:"Img "+extN,fit:"cover",render:coverTab(hue)};return id}
+
+/* ══ 2 · tree state + pure ops — the portable core ══════════════════════
+   ONE node shape everywhere: the docked layout and every float root are
+   the same binary tree. All structural ops go through replaceNode/detach
+   so docked and floating trees can never diverge in behavior. */
+let lid=0,fid=0,zTop=20;
+const newLeaf=(tabs,active)=>({leaf:true,id:"L"+(++lid),tabs,active:active??tabs[0]});
+let state={v:1,layout:null,floating:[]};
+
+const eachLeafOf=(n,fn)=>n.leaf?fn(n):(eachLeafOf(n.a,fn),eachLeafOf(n.b,fn));
+function eachLeaf(fn){
+  if(state.layout)eachLeafOf(state.layout,fn);
+  state.floating.forEach(f=>eachLeafOf(f.root,fn))}
+const isCollapsedTree=n=>n.leaf?!!n.collapsed
+  :(isCollapsedTree(n.a)&&isCollapsedTree(n.b));
+const treeContains=(t,n)=>t===n||(!t.leaf&&(treeContains(t.a,n)||treeContains(t.b,n)));
+const isGroupCollapse=n=>!n.leaf&&isCollapsedTree(n);
+/* A fully-collapsed split merges into ONE group only when its own axis is
+   PERPENDICULAR to the axis it is presented on (its parent's; a float root
+   presents on "col"). A group reads one way — the bar left-to-right, the
+   rail a single glyph — so merging is honest only when its panes read that
+   way too. Same axis: nothing to merge, the parent already lays them out,
+   and merging would lie — row-in-row put "ref a | ref b | paytable" under
+   ONE chevron, col-in-col drew stacked panes side by side.
+   [HUMAN] Sam 2026-09-03 */
+const mergesAsGroup=(n,on)=>isGroupCollapse(n)&&n.split!==on;
+function findLeaf(id){let hit=null;eachLeaf(l=>{if(l.id===id)hit=l});return hit}
+function floatOf(node){return state.floating.find(f=>treeContains(f.root,node))||null}
+
+/* `collapsed` is the collapse sequence № — reopeners pick the max */
+let cseq=0;
+function lastCollapsedOf(n,except){let best=null;
+  eachLeafOf(n,l=>{if(l!==except&&l.collapsed&&
+    (!best||(+l.collapsed||0)>(+best.collapsed||0)))best=l});
+  return best}
+/* collapse a pane. The DOCKED tree keeps ≥1 expanded pane: if this was
+   its last open pane, the previously-collapsed one reopens instead
+   (single leaf: refused). Floats are exempt — fully collapsed = shaded. */
+function collapseGuarded(node){
+  node.collapsed=++cseq;
+  if(state.layout&&isCollapsedTree(state.layout)&&!floatOf(node)){
+    const prev=lastCollapsedOf(state.layout,node);
+    if(prev)prev.collapsed=false;
+    else{node.collapsed=false;toast("one pane always stays open")}}
+  mark("accordion")}
+/* the single expand path — optionally selecting a tab first */
+function openLeaf(l,tid){if(!l)return;
+  if(tid!==undefined)l.active=tid;
+  l.collapsed=false;mark("accordion");rerender()}
+
+/* replace `target` wherever it sits — docked root, float root, or either
+   child of any split in any tree */
+function replaceNode(target,repl){
+  if(state.layout===target){state.layout=repl;return true}
+  const fr=state.floating.find(f=>f.root===target);
+  if(fr){fr.root=repl;return true}
+  const walk=n=>{if(!n||n.leaf)return false;
+    if(n.a===target){n.a=repl;return true}
+    if(n.b===target){n.b=repl;return true}
+    return walk(n.a)||walk(n.b)};
+  return walk(state.layout)||state.floating.some(f=>walk(f.root))}
+/* remove a node — leaf or subtree, docked or floating. A float whose
+   root leaves closes its window; the docked root leaves an empty layout;
+   anywhere else the sibling absorbs the space. */
+function detach(n){
+  const fl=state.floating.find(f=>f.root===n);
+  if(fl){state.floating=state.floating.filter(f=>f!==fl);return}
+  if(state.layout===n){state.layout=null;return}
+  const walk=p=>{if(!p||p.leaf)return false;
+    if(p.a===n||p.b===n)return replaceNode(p,p.a===n?p.b:p.a);
+    return walk(p.a)||walk(p.b)};
+  walk(state.layout)||state.floating.some(f=>walk(f.root))}
+
+/* pull a tab out of its leaf (detaching if emptied); true if leaf died */
+function pullTab(leaf,tab){
+  const i=leaf.tabs.indexOf(tab);if(i<0)return false;
+  leaf.tabs.splice(i,1);
+  if(leaf.active===tab)leaf.active=leaf.tabs[Math.min(i,leaf.tabs.length-1)]??null;
+  if(!leaf.tabs.length){detach(leaf);return true}
+  return false}
+
+/* split `target` on `edge` (l|r|t|b); the new node takes half */
+function splitLeaf(target,edge,nl){
+  const horiz=edge==="l"||edge==="r",first=edge==="l"||edge==="t";
+  const split={split:horiz?"row":"col",ratio:.5,
+    a:first?nl:target,b:first?target:nl};
+  replaceNode(target,split)}
+
+function floatAt(node,x,y,w=340,h=240){
+  state.floating.push({id:"F"+(++fid),x:Math.round(x),y:Math.round(y),w,h,z:++zTop,root:node})}
+
+/* the split holding `n` as a direct child — docked tree or any float */
+function parentOf(n){let hit=null;
+  const walk=c=>{if(!c||c.leaf||hit)return;
+    if(c.a===n||c.b===n)hit=c;else{walk(c.a);walk(c.b)}};
+  walk(state.layout);state.floating.forEach(f=>walk(f.root));return hit}
+/* panes as the RUN sees them: a same-axis split is a step towards more
+   panes, anything else is ONE pane however deep it goes */
+const paneCount=(n,ax)=>n.leaf||n.split!==ax?1
+  :paneCount(n.a,ax)+paneCount(n.b,ax);
+/* give every pane of the run the same share. The tree is binary, so "even"
+   is not .5 everywhere: a split's ratio is how many panes sit on its `a`
+   side out of its own total, and the products come out equal —
+   row{row{A,B},C} is 2/3 then 1/2, so A=B=C=1/3 */
+function spreadRun(n,ax){if(n.leaf||n.split!==ax)return;
+  const before=paneCount(n.a,ax);
+  n.ratio=before/(before+paneCount(n.b,ax));
+  spreadRun(n.a,ax);spreadRun(n.b,ax)}
+/* dbl-click / Enter: even out every pane on this divider's axis. The run
+   is the MAXIMAL span of same-axis splits around it, so every divider in a
+   row means the same thing — "space this row evenly" — instead of
+   depending on which one the pointer found. Scoped to the clicked split
+   alone, the inner divider of A|B|C only re-halves its own half, which is
+   the 25/25/50 being complained about. Splits ACROSS the axis are single
+   panes and keep their ratios. [HUMAN] Sam 2026-09-03 */
+function evenSplits(node){let top=node;
+  for(;;){const p=parentOf(top);if(!p||p.split!==top.split)break;top=p}
+  spreadRun(top,top.split);mark("reset");
+  return paneCount(top,top.split)}
+
+function serialize(){return JSON.stringify(state)}
+/* Drop tabs the registry no longer knows, then the leaves they emptied —
+   the sibling absorbs, exactly as closing a pane's last tab does. A stored
+   layout outlives the tabs it names, and an id nobody can render must not
+   keep holding a pane or be the `active` one. */
+function prune(known){
+  const dead=[];
+  eachLeaf(l=>{l.tabs=l.tabs.filter(known);
+    if(!l.tabs.length)dead.push(l);
+    else if(!l.tabs.includes(l.active))l.active=l.tabs[0]});
+  dead.forEach(detach)}
+function hydrate(json,known){state=JSON.parse(json);if(known)prune(known);
+  eachLeaf(l=>{const n=+l.id.slice(1);if(n>lid)lid=n;
+    if((+l.collapsed||0)>cseq)cseq=+l.collapsed});
+  state.floating.forEach(f=>{const n=+f.id.slice(1);if(n>fid)fid=n;if(f.z>zTop)zTop=f.z})}
+
+/* ══ 3 · render ═════════════════════════════════════════════════════════ */
+const stage=$("#stage"),rootEl=$("#dockRoot"),preview=$("#dropPreview");
+const insertBar=document.createElement("div");insertBar.className="dock-insert";
+
+function rerender(){
+  rootEl.innerHTML="";
+  if(!state.layout){
+    const e=document.createElement("div");e.className="dock-empty";
+    e.textContent="empty layout — drop a tab or a reference here";
+    wireEmpty(e);rootEl.append(e);
+  }else rootEl.append(renderNode(state.layout));
+  $$(".dock-float").forEach(f=>f.remove());
+  state.floating.forEach(renderFloat);
+  $$(".dock-tabstrip,.dock-group.col").forEach(s=>{centerActive(s);updateSpill(s)});
+  syncInspector();
+}
+/* the active tab of an overflowing strip re-centers on every render —
+   selection triggers a render, manual scrolling never does */
+function centerActive(strip){
+  const on=strip.querySelector(".dock-tab.on");
+  if(!on||!strip.clientWidth||strip.scrollWidth<=strip.clientWidth+2)return;
+  strip.scrollLeft=on.offsetLeft-(strip.clientWidth-on.offsetWidth)/2}
+/* spill state (.can-l/.can-r) drives the overflow treatment's indicators */
+function updateSpill(strip,byUser){
+  const over=strip.scrollWidth>strip.clientWidth+2;
+  strip.classList.toggle("can-l",over&&strip.scrollLeft>2);
+  strip.classList.toggle("can-r",
+    over&&strip.scrollLeft<strip.scrollWidth-strip.clientWidth-2);
+  if(over&&byUser)mark("overflow")}
+/* edge fade; with a `node` it also carries the paging chevron */
+function mkSpill(strip,node,side){
+  const s=document.createElement("div");s.className="dock-spill "+side;
+  s.append(document.createElement("i"));
+  if(!node)return s;
+  const b=document.createElement("button");b.type="button";b.tabIndex=-1;
+  b.textContent=side==="l"?"‹":"›";
+  b.title=side==="l"?"previous tab":"next tab";
+  b.addEventListener("click",()=>{        /* chevron selects prev/next tab;
+    at the ends it re-selects the end tab, which re-centers it in view */
+    const i=node.tabs.indexOf(node.active);
+    const j=Math.max(0,Math.min(node.tabs.length-1,i+(side==="l"?-1:1)));
+    node.active=node.tabs[j];mark("overflow");rerender()});
+  s.append(b);return s}
+/* a tab's status light — severity only, the palette mapping is CSS */
+function mkDot(status){const d=document.createElement("span");
+  d.className="dock-tab-dot";d.dataset.status=status;
+  d.setAttribute("aria-label",status);return d}
+/* hover-revealed × for collapsed chrome — closes what its host represents */
+function mkClose(fn,label){
+  const x=document.createElement("span");x.className="dock-tab-close";
+  x.textContent="×";x.title="close";x.setAttribute("aria-label",label);
+  x.addEventListener("click",e=>{e.stopPropagation();fn()});
+  return x}
+/* dbl-click and Enter are one affordance; two panes still land on 50/50 */
+function evenAxis(node){const panes=evenSplits(node);rerender();
+  toast(`even split — ${panes} panes across`)}
+function renderNode(node){
+  if(node.leaf)return renderLeaf(node);
+  const el=document.createElement("div");el.className="dock-split "+node.split;
+  const renderChild=c=>mergesAsGroup(c,node.split)
+    ?renderGroup(c,node.split):renderNode(c);
+  const a=renderChild(node.a),b=renderChild(node.b);
+  /* a collapsed side is fixed; its sibling must grow 1 — grow sums below 1
+     only distribute that fraction of the free space (flex spec). Collapse
+     is RECURSIVE: a split whose children are all collapsed collapses too. */
+  const aC=isCollapsedTree(node.a),bC=isCollapsedTree(node.b);
+  a.style.flex=aC?"0 0 auto":`${bC?1:node.ratio} 1 0`;
+  b.style.flex=bC?"0 0 auto":`${aC?1:1-node.ratio} 1 0`;
+  const d=document.createElement("div");d.className="dock-divider";d._node=node;
+  d.tabIndex=0;d.setAttribute("role","separator");
+  d.setAttribute("aria-orientation",node.split==="row"?"vertical":"horizontal");
+  d.setAttribute("aria-valuenow",Math.round(node.ratio*100));
+  d.title="drag to resize · double-click or Enter spaces the axis evenly · arrows nudge";
+  if(aC||bC){
+    d.classList.add("disabled");d.tabIndex=-1}     /* collapsed side: fixed */
+  d.addEventListener("pointerdown",onDividerDown);
+  d.addEventListener("dblclick",()=>evenAxis(node));
+  d.addEventListener("keydown",e=>{
+    const horiz=node.split==="row";
+    const delta=e.key===(horiz?"ArrowLeft":"ArrowUp")?-.02
+      :e.key===(horiz?"ArrowRight":"ArrowDown")?.02:null;
+    if(e.key==="Enter"){evenAxis(node);
+      [...rootEl.querySelectorAll(".dock-divider")].find(x=>x._node===node)?.focus();return}
+    if(delta===null)return;
+    e.preventDefault();
+    node.ratio=Math.max(.05,Math.min(.95,node.ratio+delta));
+    d.previousElementSibling.style.flex=`${node.ratio} 1 0`;
+    d.nextElementSibling.style.flex=`${1-node.ratio} 1 0`;
+    d.setAttribute("aria-valuenow",Math.round(node.ratio*100));
+    mark("resize");syncInspector()});
+  el.append(a,d,b);return el;
+}
+function renderLeaf(node){
+  const el=document.createElement("div");
+  const solo=state.layout===node&&node.tabs.length===1&&!node.collapsed;
+  el.className="dock-leaf"+(node.collapsed?" collapsed":"")+(solo?" solo":"");
+  el.dataset.leaf=node.id;el._node=node;
+  const strip=document.createElement("div");strip.className="dock-tabstrip";
+  strip.setAttribute("role","tablist");
+  strip.append(mkSpill(strip,node,"l"));
+  node.tabs.forEach(tid=>{
+    const t=TABS[tid];if(!t)return;
+    const b=document.createElement("button");
+    b.className="dock-tab"+(node.active===tid?" on":"");
+    b.dataset.tab=tid;b.setAttribute("role","tab");
+    b.setAttribute("aria-selected",node.active===tid);b.title=t.title;
+    if(t.status)b.append(mkDot(t.status));
+    const lab=document.createElement("span");lab.className="dock-tab-label";
+    lab.textContent=t.title;b.append(lab);
+    if(t.closable!==false){
+      b.append(mkClose(()=>closeTab(node,tid),"close "+t.title));
+      b.addEventListener("auxclick",e=>{            /* middle-click close */
+        if(e.button===1){e.preventDefault();closeTab(node,tid)}})}
+    b.addEventListener("click",()=>{
+      if(node.active===tid&&!node.collapsed){
+        collapseGuarded(node);rerender()}    /* active tab → collapse/shade */
+      else openLeaf(node,tid)});             /* any select → expand */
+    b.addEventListener("keydown",e=>{               /* roving strip focus */
+      if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight"&&e.key!=="Home"&&e.key!=="End")return;
+      e.preventDefault();
+      const tabs=[...b.parentElement.querySelectorAll(".dock-tab")];
+      const i=tabs.indexOf(b);
+      const j=e.key==="ArrowLeft"?Math.max(0,i-1):e.key==="ArrowRight"
+        ?Math.min(tabs.length-1,i+1):e.key==="Home"?0:tabs.length-1;
+      tabs[j].focus()});
+    wireDragSource(b,()=>({kind:"tab",tab:tid,src:node.id}));
+    strip.append(b)});
+  strip.append(mkSpill(strip,node,"r"));
+  /* the strip's empty area drags the WHOLE pane (all tabs, order+active
+     kept) and click-toggles collapse — float strips included (a float
+     pane collapsing = the window shading). */
+  wireDragSource(strip,()=>({kind:"pane",src:node.id}));
+  strip.addEventListener("click",e=>{
+    if(e.target!==strip)return;
+    if(node.collapsed)openLeaf(node);
+    else{collapseGuarded(node);rerender()}});
+  strip.addEventListener("wheel",e=>{e.preventDefault();
+    strip.scrollLeft+=e.deltaY+e.deltaX;updateSpill(strip,true)});
+  strip.addEventListener("scroll",()=>updateSpill(strip,true));
+  /* strips are precise join targets: root band needs ⇧ over them — else
+     edge-flush strips could never take a plain drop */
+  wireDropTarget(strip,{shiftRoot:true,
+    over:e=>{hidePreview();
+      const idx=stripIndex(strip,e.clientX);
+      const tabs=strip.querySelectorAll(".dock-tab");
+      insertBar.style.left=(idx<tabs.length?tabs[idx].offsetLeft
+        :tabs.length?tabs[tabs.length-1].offsetLeft+tabs[tabs.length-1].offsetWidth:4)+"px";
+      strip.append(insertBar)},
+    drop:e=>dropOnStrip(node,stripIndex(strip,e.clientX))});
+  const body=document.createElement("div");body.className="dock-body";
+  const content=document.createElement("div");content.className="dock-content";
+  const active=TABS[node.active];
+  if(active){if(active.fit)content.dataset.fit=active.fit;active.render(content)}
+  body.append(content);
+  wireDropTarget(body,{
+    over:e=>showPreview(el,zoneOf(body,e)),   /* preview spans strip+body */
+    drop:e=>dropOnBody(node,zoneOf(body,e))});
+  const stub=document.createElement("button");stub.className="dock-collapsed-stub";
+  stub.title="expand";stub.textContent="▸";
+  stub.addEventListener("click",()=>openLeaf(node));
+  /* a collapsed ▸ stub drags its whole pane, like the strip's empty area;
+     a drop on it joins as a tab and opens the pane */
+  wireDragSource(stub,()=>({kind:"pane",src:node.id}));
+  wireDropTarget(stub,{
+    over:()=>showPreview(el,"c"),
+    drop:()=>dropOnStrip(node,node.tabs.length)});
+  el.append(strip,body,stub);return el;
+}
+/* group: a fully-collapsed split. Vertical rail (row parent): a single ▸.
+   Horizontal bar (col parent): STRUCTURAL — one cell per child in tree
+   order; a leaf cell lists every tab, a nested-split cell shows ▸; each
+   cell reopens (or takes a drop into) its own side. */
+function wireGroupDrops(el,targetOf){
+  wireDropTarget(el,{
+    over:()=>showPreview(el,"c"),
+    drop:()=>{const l=targetOf();if(!l)return dragCleanup();
+      dropOnStrip(l,l.tabs.length)}})}   /* the join expands the target pane */
+function renderGroup(sub,axis){
+  const titleOf=l=>l?(TABS[l.active]?.title??l.active):"";
+  if(axis==="row"){
+    const g=document.createElement("button");g.className="dock-group row";
+    g.title="reopen "+titleOf(lastCollapsedOf(sub));g.textContent="▸";
+    g.addEventListener("click",()=>openLeaf(lastCollapsedOf(sub)));
+    wireGroupDrops(g,()=>lastCollapsedOf(sub));
+    wireDragSource(g,()=>({kind:"tree",node:sub}));  /* rail drags the split */
+    return g}
+  const g=document.createElement("div");g.className="dock-group col";
+  g.append(mkSpill(g,null,"l"));
+  /* side-by-side (row) nesting FLATTENS into the bar — its panes already
+     read left-to-right like the bar's cells, at any row-depth, in tree
+     order; only a nested COL split (a vertical stack) keeps a single
+     ▸ cell — [HUMAN] Sam rule 2026-09-03 */
+  const cells=[];
+  const flat=n=>(n.leaf||n.split==="col")?cells.push(n):(flat(n.a),flat(n.b));
+  flat(sub.a);flat(sub.b);
+  cells.forEach(child=>{
+    const c=document.createElement("button");c.className="dock-group-cell";
+    const target=()=>child.leaf?child:lastCollapsedOf(child);
+    if(child.leaf){
+      /* one clickable title per tab — reopen on that tab; each carries a
+         hover-× closing it, and drags that tab out (strip parity) */
+      child.tabs.forEach(tid=>{
+        const s=document.createElement("span");s.className="dock-group-tab";
+        if(TABS[tid]?.status)s.append(mkDot(TABS[tid].status));
+        s.append(document.createTextNode(TABS[tid]?.title??tid));
+        s.title="open "+(TABS[tid]?.title??tid);
+        s.addEventListener("click",e=>{e.stopPropagation();openLeaf(child,tid)});
+        if(TABS[tid]?.closable!==false)
+          s.append(mkClose(()=>closeTab(child,tid),
+            "close "+(TABS[tid]?.title??tid)));
+        wireDragSource(s,()=>({kind:"tab",tab:tid,src:child.id}));
+        c.append(s)});
+      /* the cell's padding drags its whole pane */
+      wireDragSource(c,()=>({kind:"pane",src:child.id}));
+    }else{
+      /* nested-split cell: bare ▸, no close button; drags its subtree */
+      const lab=document.createElement("span");lab.className="dock-group-tab";
+      lab.textContent="▸";c.append(lab);
+      c.title="reopen "+titleOf(target());
+      wireDragSource(c,()=>({kind:"tree",node:child}))}
+    c.addEventListener("click",()=>openLeaf(target()));
+    wireGroupDrops(c,target);
+    g.append(c)});
+  g.append(mkSpill(g,null,"r"));
+  /* the bar's empty area (right of the cells): click reopens the group's
+     last-collapsed pane; dragging it drags the FULL split */
+  g.addEventListener("click",e=>{
+    if(e.target.closest(".dock-group-cell"))return;
+    openLeaf(lastCollapsedOf(sub))});
+  g.addEventListener("wheel",e=>{e.preventDefault();
+    g.scrollLeft+=e.deltaY+e.deltaX;updateSpill(g,true)});
+  g.addEventListener("scroll",()=>updateSpill(g,true));
+  /* a drop on the bar's EMPTY area always becomes a NEW pane, landing
+     expanded BESIDE the group — a row split, on the bar's own axis, so
+     the pane lands where the drop did and the bar's flattened cells stay
+     true (a col split would flatten straight back into this bar as a peer
+     cell while the tree said it sat below). Joining as a tab is the
+     CELLS' job (drop on the pane you mean) — [HUMAN] Sam 2026-09-03 */
+  wireDropTarget(g,{
+    over:()=>showPreview(g,"c"),
+    drop:()=>{
+      /* a payload from inside this group can't become its own sibling */
+      const srcNode=DRAG.kind==="tree"?DRAG.node
+        :DRAG.src?findLeaf(DRAG.src):null;
+      if(srcNode&&(treeContains(sub,srcNode)
+        ||(!srcNode.leaf&&treeContains(srcNode,sub))))return dragCleanup();
+      const got=takeDrag();
+      if(got===null||got==="same")return dragCleanup();
+      replaceNode(sub,{split:"row",ratio:.5,a:sub,
+        b:got.tree??newLeaf(got.tabs,got.active)});
+      mark("split");if(DRAG.wasFloat)mark("redock");
+      toast("new split");dragCleanup();rerender()}});
+  wireDragSource(g,()=>({kind:"tree",node:sub}));
+  return g}
+function renderFloat(f){
+  const el=document.createElement("div");
+  const shaded=isCollapsedTree(f.root);
+  el.className="dock-float"+(f.z===zTop?" front":"")+(shaded?" shaded":"");
+  el.style.cssText=`left:${f.x}px;top:${f.y}px;`+
+    `width:${shaded?"auto":f.w+"px"};`+
+    `height:${shaded?"auto":f.h+"px"};z-index:${f.z}`;
+  /* a float is a full tree; a fully-collapsed root renders as its group
+     bar — the shaded window IS its collapsed form, w/h kept for unshade */
+  el.append(mergesAsGroup(f.root,"col")?renderGroup(f.root,"col"):renderNode(f.root));
+  /* window grip — the one surface that MOVES the window; its drags never
+     dock-assign. Lives LEFT of the first strip's tabs (visible expanded
+     and shaded): × affordances sit right, and the left edge stays put. */
+  const grip=document.createElement("span");grip.className="dock-float-grip";
+  grip.textContent="⠿";grip.title="move window";
+  grip.draggable=true;                        /* claim + cancel HTML5 drags */
+  grip.addEventListener("dragstart",e=>{e.preventDefault();e.stopPropagation()});
+  /* a grip release fires a click (capture keeps down+up on the grip) —
+     swallow it, or it bubbles to the host bar/strip and expands a
+     shaded window. Grip clicks mean nothing anywhere. */
+  grip.addEventListener("click",e=>{e.preventDefault();e.stopPropagation()});
+  grip.addEventListener("pointerdown",e=>startFloatMove(e,f,el));
+  el.querySelector(".dock-tabstrip,.dock-group")?.prepend(grip);
+  if(!shaded)                            /* no resize while shaded */
+  ["n","s","e","w","ne","nw","se","sw"].forEach(dir=>{
+    const h=document.createElement("div");h.className="dock-float-edge";
+    h.dataset.dir=dir;
+    h.addEventListener("pointerdown",e=>startFloatResize(e,f,el,dir));
+    el.append(h)});
+  el.addEventListener("pointerdown",()=>{if(f.z!==zTop){f.z=++zTop;el.style.zIndex=f.z;
+    $$(".dock-float.front").forEach(x=>x.classList.remove("front"));
+    el.classList.add("front");
+    mark("zmove");syncInspector()}},true);
+  stage.append(el);
+}
+function wireEmpty(e){
+  wireDropTarget(e,{
+    over:()=>e.classList.add("drag-over"),
+    leave:()=>e.classList.remove("drag-over"),
+    drop:()=>{const got=takeDrag();
+      if(got===null||got==="same")return dragCleanup();
+      state.layout=got.tree??newLeaf(got.tabs,got.active);
+      if(DRAG.wasFloat)mark("redock");
+      dragCleanup();rerender();toast("root leaf created")}})}
+
+/* ══ 4 · dividers — pointer-captured drag, min-pane clamp, no rAF ═══════ */
+function onDividerDown(e){
+  const d=e.currentTarget,node=d._node,horiz=node.split==="row";
+  const rect=d.parentElement.getBoundingClientRect();
+  const inner=(horiz?rect.width:rect.height)-DIVIDER;
+  if(inner<=0)return;
+  d.setPointerCapture(e.pointerId);d.classList.add("active");
+  document.body.classList.add("resizing");
+  const move=ev=>{
+    let r=((horiz?ev.clientX-rect.left:ev.clientY-rect.top)-DIVIDER/2)/inner;
+    const min=Math.min(MIN_PANE/inner,.5);
+    node.ratio=Math.max(min,Math.min(1-min,r));
+    d.previousElementSibling.style.flex=`${node.ratio} 1 0`;
+    d.nextElementSibling.style.flex=`${1-node.ratio} 1 0`;
+    mark("resize")};
+  const up=()=>{d.classList.remove("active");
+    document.body.classList.remove("resizing");
+    d.removeEventListener("pointermove",move);d.removeEventListener("pointerup",up);
+    syncInspector()};
+  d.addEventListener("pointermove",move);d.addEventListener("pointerup",up);
+}
+
+/* ══ 5 · drag & drop — HTML5 DnD; one source wiring, one target wiring ══ */
+let DRAG=null;
+function dragCleanup(){DRAG=null;hidePreview();insertBar.remove();
+  document.body.classList.remove("tab-drag");
+  $$(".dragging").forEach(t=>t.classList.remove("dragging"))}
+
+/* every drag source: sets the global DRAG payload on dragstart.
+   kinds: "tab" {tab,src} · "pane" {src} · "tree" {node}. The e.target
+   gate lets nested sources (a tab inside a strip, a bar tab inside a
+   cell) run their own drags — dragstart fires at the innermost
+   draggable element. */
+function wireDragSource(el,mk){
+  el.draggable=true;
+  el.addEventListener("dragstart",e=>{
+    if(e.target!==el)return;
+    DRAG=mk();
+    e.dataTransfer.setData("application/x-dock-"+DRAG.kind,DRAG.tab??DRAG.src??"");
+    e.dataTransfer.effectAllowed="move";
+    document.body.classList.add("tab-drag");el.classList.add("dragging")});
+  el.addEventListener("dragend",dragCleanup)}
+
+/* every drop target shares one skeleton, in precedence order:
+   root band (⇧-gated on strips via o.shiftRoot) → ⇧-float → the
+   target's own zone. o.over paints the local indicator, o.drop lands. */
+function wireDropTarget(el,o){
+  el.addEventListener("dragover",e=>{if(!DRAG)return;
+    e.preventDefault();e.stopPropagation();
+    e.dataTransfer.dropEffect=DRAG.kind==="ext"?"copy":"move";
+    const rz=(!o.shiftRoot||e.shiftKey)&&rootZone(e);
+    insertBar.remove();
+    if(rz)return showPreview(stage,rz);           /* root edge */
+    if(e.shiftKey)return showFloatGhost(e);       /* ⇧ = force float */
+    o.over(e)});
+  el.addEventListener("dragleave",e=>{
+    if(e.target!==el)return;
+    hidePreview();insertBar.remove();o.leave?.()});
+  el.addEventListener("drop",e=>{if(!DRAG)return;
+    e.preventDefault();e.stopPropagation();
+    const rz=(!o.shiftRoot||e.shiftKey)&&rootZone(e);
+    if(rz)return rootSplitDrop(rz);
+    if(e.shiftKey)return floatDrop(e);
+    o.drop(e)})}
+
+/* 5 zones on a body: 30% edge bands split, the centre joins */
+function zoneOf(el,e){
+  const r=el.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+  if(x>EDGE_BAND&&x<1-EDGE_BAND&&y>EDGE_BAND&&y<1-EDGE_BAND)return"c";
+  const dl=x,dr=1-x,dt=y,db=1-y,m=Math.min(dl,dr,dt,db);
+  return m===dl?"l":m===dr?"r":m===dt?"t":"b"}
+function showPreview(body,z){
+  const r=body.getBoundingClientRect(),half={w:r.width/2,h:r.height/2};
+  const box=z==="c"?{l:r.left,t:r.top,w:r.width,h:r.height}
+    :z==="l"?{l:r.left,t:r.top,w:half.w,h:r.height}
+    :z==="r"?{l:r.left+half.w,t:r.top,w:half.w,h:r.height}
+    :z==="t"?{l:r.left,t:r.top,w:r.width,h:half.h}
+    :{l:r.left,t:r.top+half.h,w:r.width,h:half.h};
+  const wasHidden=preview.style.display!=="block";
+  if(wasHidden)preview.style.transition="none";     /* snap on first show */
+  preview.style.display="block";
+  preview.style.left=box.l+"px";preview.style.top=box.t+"px";
+  preview.style.width=box.w+"px";preview.style.height=box.h+"px";
+  if(wasHidden){preview.getBoundingClientRect();preview.style.transition=""}}
+function hidePreview(){preview.style.display="none"}
+function stripIndex(strip,cx){
+  const tabs=[...strip.querySelectorAll(".dock-tab")];
+  for(let i=0;i<tabs.length;i++){const r=tabs[i].getBoundingClientRect();
+    if(cx<r.left+r.width/2)return i}
+  return tabs.length}
+
+/* resolve the drag into a payload, pulling it from the source.
+   "tab" carries one tab; "pane" the source leaf's whole tab set (the
+   leaf is detached — its sibling absorbs); "tree" a whole subtree
+   (detached, expanded; ALSO flattened to tabs so join targets can take
+   it); "ext" mints a new tab.
+   Returns {tabs,active,tree?} | "same" (dropped on/into itself) | null. */
+function takeDrag(target){
+  if(DRAG.kind==="ext"){mark("external");return{tabs:[makeExtTab(DRAG.hue)]}}
+  if(DRAG.kind==="tree"){
+    const t=DRAG.node;
+    if(target&&treeContains(t,target))return"same";
+    DRAG.wasFloat=state.floating.some(f=>f.root===t||treeContains(f.root,t));
+    detach(t);
+    const tabs=[];let act=null,seq=-1;
+    eachLeafOf(t,l=>{tabs.push(...l.tabs);
+      if((+l.collapsed||0)>=seq){seq=+l.collapsed||0;act=l.active}
+      l.collapsed=false});                  /* a drop always lands expanded */
+    return{tabs,active:act??tabs[0],tree:t}}
+  const src=findLeaf(DRAG.src);
+  if(!src)return null;
+  if(target&&src===target)return"same";
+  DRAG.wasFloat=!!floatOf(src);
+  if(DRAG.kind==="pane"){
+    const p={tabs:src.tabs.slice(),active:src.active};
+    src.tabs.length=0;detach(src);
+    return p}
+  pullTab(src,DRAG.tab);
+  return{tabs:[DRAG.tab],active:DRAG.tab}}
+
+function dropOnStrip(node,idx){
+  const got=takeDrag(node);
+  if(got===null)return dragCleanup();
+  if(got==="same"){
+    if(DRAG.kind==="tab"){                            /* reorder in place */
+      const from=node.tabs.indexOf(DRAG.tab);
+      node.tabs.splice(from,1);if(idx>from)idx--;
+      node.tabs.splice(idx,0,DRAG.tab);node.active=DRAG.tab;
+      mark("reorder");toast("tab reordered")}
+  }else{
+    node.tabs.splice(Math.max(0,Math.min(idx,node.tabs.length)),0,...got.tabs);
+    node.active=got.active??got.tabs[0];node.collapsed=false;
+    mark("join");if(DRAG.wasFloat)mark("redock");
+    toast(DRAG.kind==="ext"?"external content joined as tab"
+      :DRAG.kind==="pane"?"pane merged"
+      :DRAG.kind==="tree"?"split merged":"tab moved");
+  }
+  dragCleanup();rerender();
+}
+function dropOnBody(node,zone){
+  if(zone==="c"){dropOnStrip(node,node.tabs.length);return}
+  if(DRAG.kind==="tab"&&DRAG.src===node.id&&node.tabs.length===1)
+    {dragCleanup();return}                            /* sole tab → own edge: no-op */
+  if(DRAG.kind==="pane"&&DRAG.src===node.id)
+    {dragCleanup();return}                            /* pane → own edge: no-op */
+  if(DRAG.kind==="tree"&&treeContains(DRAG.node,node))
+    {dragCleanup();return}                            /* tree → its own leaf: no-op */
+  const got=takeDrag();
+  if(got===null||got==="same")return dragCleanup();
+  /* a tree payload splices in whole — its internal splits survive */
+  splitLeaf(node,zone,got.tree??newLeaf(got.tabs,got.active));
+  if(DRAG.kind!=="ext"){mark("split");if(DRAG.wasFloat)mark("redock")}
+  toast("new split — "+({l:"left",r:"right",t:"top",b:"bottom"})[zone]);
+  dragCleanup();rerender();
+}
+/* the outermost 12px of the stage splits at the ROOT — the whole docked
+   tree becomes one side. Wins over pane zones and over ⇧-float. */
+function rootZone(e){
+  if(!state.layout)return null;
+  const band=e.shiftKey?ROOT_BAND*2:ROOT_BAND;   /* ⇧ doubles the hit region */
+  const r=stage.getBoundingClientRect();
+  const d={l:e.clientX-r.left,r:r.right-e.clientX,
+           t:e.clientY-r.top,b:r.bottom-e.clientY};
+  const m=Math.min(d.l,d.r,d.t,d.b);
+  return m>band?null:m===d.l?"l":m===d.r?"r":m===d.t?"t":"b"}
+function rootSplitDrop(z){
+  const got=takeDrag();
+  if(got===null||got==="same")return dragCleanup();
+  const nl=got.tree??newLeaf(got.tabs,got.active);
+  const horiz=z==="l"||z==="r",first=z==="l"||z==="t";
+  state.layout=state.layout
+    ?{split:horiz?"row":"col",ratio:.5,
+      a:first?nl:state.layout,b:first?state.layout:nl}
+    :nl;
+  mark("rootsplit");
+  toast("root split — "+({l:"left",r:"right",t:"top",b:"bottom"})[z]);
+  dragCleanup();rerender()}
+/* ⇧-drop floats the payload — a tree floats WHOLE (floats are trees) */
+function floatPos(e){
+  /* offsets put the dropped tab's title under the pointer (≈ mid-tab) */
+  const r=stage.getBoundingClientRect();
+  return{x:Math.max(4,Math.min(Math.round(e.clientX-r.left-30),r.width-344)),
+         y:Math.max(4,Math.min(Math.round(e.clientY-r.top-14),r.height-244))}}
+function showFloatGhost(e){          /* window-sized ghost at the pointer */
+  const r=stage.getBoundingClientRect(),p=floatPos(e);
+  const wasHidden=preview.style.display!=="block";
+  if(wasHidden)preview.style.transition="none";
+  preview.style.display="block";
+  preview.style.left=(r.left+p.x)+"px";preview.style.top=(r.top+p.y)+"px";
+  preview.style.width="340px";preview.style.height="240px";
+  if(wasHidden){preview.getBoundingClientRect();preview.style.transition=""}}
+function floatDrop(e){
+  const p=floatPos(e);
+  const got=takeDrag();
+  if(got===null||got==="same")return dragCleanup();
+  floatAt(got.tree??newLeaf(got.tabs,got.active),p.x,p.y);
+  if(DRAG.kind==="tab")mark("float");
+  toast("floated — drag its ⠿ grip to move, resize any edge");
+  dragCleanup();rerender()}
+
+/* ══ 6 · floats — pointer-event move / resize / z-order ═════════════════ */
+/* grip drag: pure window move — never dock-assigns (re-dock by dragging
+   the float's tabs / strip / bar, which are ordinary drag sources) */
+function startFloatMove(e,f,el){
+  e.preventDefault();el.classList.add("moving");
+  const r=stage.getBoundingClientRect(),ox=e.clientX-f.x,oy=e.clientY-f.y;
+  const grip=e.currentTarget;grip.setPointerCapture(e.pointerId);
+  const move=ev=>{
+    f.x=Math.round(Math.max(0,Math.min(ev.clientX-ox,r.width-40)));
+    f.y=Math.round(Math.max(0,Math.min(ev.clientY-oy,r.height-30)));
+    el.style.left=f.x+"px";el.style.top=f.y+"px";mark("zmove")};
+  const up=()=>{el.classList.remove("moving");
+    grip.removeEventListener("pointermove",move);grip.removeEventListener("pointerup",up);
+    syncInspector()};
+  grip.addEventListener("pointermove",move);grip.addEventListener("pointerup",up);
+}
+/* resize from any edge or corner; the opposite edge stays anchored */
+function startFloatResize(e,f,el,dir){
+  e.preventDefault();e.stopPropagation();
+  const h=e.currentTarget;h.setPointerCapture(e.pointerId);
+  const r=stage.getBoundingClientRect();
+  const sx=e.clientX,sy=e.clientY,s={x:f.x,y:f.y,w:f.w,h:f.h};
+  const MINW=180,MINH=120;
+  const move=ev=>{
+    const dx=ev.clientX-sx,dy=ev.clientY-sy;
+    if(dir.includes("e"))f.w=Math.round(Math.max(MINW,Math.min(s.w+dx,r.width-s.x)));
+    if(dir.includes("s"))f.h=Math.round(Math.max(MINH,Math.min(s.h+dy,r.height-s.y)));
+    if(dir.includes("w")){const nx=Math.round(Math.max(0,Math.min(s.x+dx,s.x+s.w-MINW)));
+      f.w=s.w+(s.x-nx);f.x=nx}
+    if(dir.includes("n")){const ny=Math.round(Math.max(0,Math.min(s.y+dy,s.y+s.h-MINH)));
+      f.h=s.h+(s.y-ny);f.y=ny}
+    el.style.left=f.x+"px";el.style.top=f.y+"px";
+    el.style.width=f.w+"px";el.style.height=f.h+"px";mark("zmove")};
+  const up=()=>{h.removeEventListener("pointermove",move);
+    h.removeEventListener("pointerup",up);rerender()};
+  h.addEventListener("pointermove",move);h.addEventListener("pointerup",up);
+}
+
+/* ══ 7 · close ══════════════════════════════════════════════════════════ */
+function closeTab(node,tid){
+  const wasFloat=!!floatOf(node);
+  if(pullTab(node,tid)){mark("collapse");
+    toast(wasFloat?"window closed":"pane closed — sibling absorbed the space")}
+  rerender();
+}
+
+/* ══ 7b · context menu ══════════════════════════════════════════════════
+   No browser lets a page add rows to the NATIVE menu (Firefox's
+   `<menu type="context">` was removed, Chrome never shipped it), so this is
+   our own panel over a prevented default. Rows are declared as file-system
+   style PATHS — "Open tab/Tools/Sim" — and the folders are assembled here,
+   so contributors stay flat: thirteen tools are thirteen paths, and two
+   contributors land in the same submenu just by naming it. */
+let MENU=null;
+function closeMenu(){MENU?.();MENU=null}
+/* split every label on "/" and grow the folder tree, first-seen order */
+function menuTree(items){
+  const root={label:"",children:new Map()};
+  for(const item of items){
+    const parts=item.label.split("/").map(p=>p.trim()).filter(Boolean);
+    if(!parts.length)continue;
+    let n=root;
+    for(const part of parts){
+      let next=n.children.get(part);
+      if(!next){next={label:part,children:new Map()};n.children.set(part,next)}
+      n=next}
+    n.item=item}
+  return root}
+const menuLive=n=>!n.item?.disabled&&(n.children.size>0||!!n.item?.run);
+function openMenu(items,x,y){
+  closeMenu();
+  const tree=menuTree(items);if(!tree.children.size)return;
+  const trail=[];                       /* one open panel per depth */
+  const closeBelow=d=>{while(trail.length>d)trail.pop()?.remove()};
+  const panelFor=(node,depth)=>{
+    const p=document.createElement("div");
+    p.className=depth?"dock-menu dock-menu-sub":"dock-menu";
+    p.setAttribute("role","menu");p.tabIndex=-1;
+    const rows=[];
+    for(const child of node.children.values()){
+      if(child.item?.separator){const r=document.createElement("div");
+        r.className="dock-menu-rule";p.append(r)}
+      const row=document.createElement("button");row.type="button";
+      row.className="dock-menu-item";row.setAttribute("role","menuitem");
+      row.disabled=!menuLive(child);
+      row.append(document.createTextNode(child.label));
+      if(child.children.size){
+        const c=document.createElement("span");c.className="dock-menu-caret";
+        c.textContent="▸";row.append(c);
+        const openChild=()=>{if(row.disabled)return;closeBelow(depth+1);
+          const box=row.getBoundingClientRect();
+          const sub=panelFor(child,depth+1);stage.append(sub);
+          trail[depth+1]=sub;placeMenu(sub,box.right,box.top)};
+        row.addEventListener("pointerenter",openChild);
+        row.addEventListener("click",openChild);
+        row.addEventListener("focus",openChild);
+      }else{
+        row.addEventListener("pointerenter",()=>closeBelow(depth+1));
+        row.addEventListener("click",()=>{closeMenu();child.item?.run?.()})}
+      rows.push(row);p.append(row)}
+    p.addEventListener("keydown",e=>{
+      const usable=rows.filter(r=>!r.disabled);
+      if(e.key==="Escape"){e.stopPropagation();closeMenu();return}
+      if(e.key==="ArrowLeft"&&depth){e.preventDefault();closeBelow(depth);
+        trail[depth-1]?.focus();return}
+      if(e.key!=="ArrowDown"&&e.key!=="ArrowUp")return;
+      e.preventDefault();
+      const i=usable.indexOf(document.activeElement);
+      const step=e.key==="ArrowDown"?1:-1;
+      usable[i===-1?0:(i+step+usable.length)%usable.length]?.focus()});
+    return p};
+  /* parented to the STAGE, never body: the --dock-* vars are written per
+     stage, so a menu elsewhere renders with no padding, width or shadow */
+  const root=panelFor(tree,0);stage.append(root);trail[0]=root;
+  placeMenu(root,x,y);
+  root.querySelector(".dock-menu-item:not(:disabled)")?.focus();
+  const down=e=>{if(trail.some(p=>p?.contains(e.target)))return;closeMenu()};
+  const leave=()=>closeMenu();
+  document.addEventListener("pointerdown",down,true);
+  addEventListener("scroll",leave,true);addEventListener("resize",leave);
+  MENU=()=>{document.removeEventListener("pointerdown",down,true);
+    removeEventListener("scroll",leave,true);removeEventListener("resize",leave);
+    closeBelow(0)}}
+/* flipped back inside the viewport when it would spill */
+function placeMenu(p,x,y){p.style.left="0px";p.style.top="0px";
+  const b=p.getBoundingClientRect();
+  p.style.left=Math.max(8,Math.min(x,innerWidth-b.width-8))+"px";
+  p.style.top=Math.max(8,Math.min(y,innerHeight-b.height-8))+"px"}
+
+const openTabIds=()=>{const o=new Set();eachLeaf(l=>l.tabs.forEach(t=>o.add(t)));return o};
+function menuItemsFor(e){
+  const tabEl=e.target.closest?.(".dock-tab,.dock-group-tab");
+  const tid=tabEl?.dataset.tab;
+  const leafEl=e.target.closest?.(".dock-leaf");
+  const leaf=leafEl?findLeaf(leafEl.dataset.leaf):null;
+  const items=[];
+  if(tid&&leaf){
+    const others=leaf.tabs.filter(x=>x!==tid);
+    items.push(
+      {label:"Close",disabled:TABS[tid]?.closable===false,
+        run:()=>closeTab(leaf,tid)},
+      {label:"Close others",disabled:!others.length,
+        run:()=>{others.forEach(x=>{if(TABS[x]?.closable!==false)pullTab(leaf,x)});rerender()}},
+      {label:"Float",separator:true,run:()=>{
+        DRAG={kind:"tab",tab:tid,src:leaf.id};
+        const r=stage.getBoundingClientRect();
+        const got=takeDrag();DRAG=null;
+        if(got&&got!=="same")floatAt(newLeaf(got.tabs,got.active),
+          Math.max(4,e.clientX-r.left-30),Math.max(4,e.clientY-r.top-14));
+        rerender()}},
+      /* the same landing a drag on that edge makes */
+      {label:"Split right",disabled:leaf.tabs.length<2,run:()=>{
+        DRAG={kind:"tab",tab:tid,src:leaf.id};dropOnBody(leaf,"r")}},
+      {label:"Split down",disabled:leaf.tabs.length<2,run:()=>{
+        DRAG={kind:"tab",tab:tid,src:leaf.id};dropOnBody(leaf,"b")}});
+  }else if(leaf){
+    items.push({label:leaf.collapsed?"Expand":"Collapse",
+      run:()=>{if(leaf.collapsed)openLeaf(leaf);else{collapseGuarded(leaf);rerender()}}});
+  }
+  const open=openTabIds();
+  const closed=Object.keys(TABS).filter(id=>!open.has(id));
+  if(!closed.length)items.push({label:"Open tab",separator:true,disabled:true});
+  else closed.forEach((id,i)=>items.push({
+    label:"Open tab"+(TABS[id].menuPath?"/"+TABS[id].menuPath:"")+"/"+TABS[id].title,
+    separator:i===0,
+    run:()=>{const target=leaf??(state.layout&&firstLeaf(state.layout));
+      if(!target)return;target.tabs.push(id);openLeaf(target,id)}}));
+  return items}
+const firstLeaf=n=>n.leaf?n:firstLeaf(n.a);
+stage.addEventListener("contextmenu",e=>{e.preventDefault();
+  openMenu(menuItemsFor(e),e.clientX,e.clientY)});
+
+/* ══ 8 · instrumentation seams ══════════════════════════════════════════
+   The review-phase chrome (live JSON inspector, sign-off checklist,
+   toasts) was removed with the demo shell; serialize()/hydrate() remain
+   the state API, and mark()/toast()/syncInspector() are kept as no-op
+   seams where the consumer's own feedback/telemetry hooks in. */
+function syncInspector(){}
+function mark(){}
+function toast(){}
+
+/* ══ 9 · boot ═══════════════════════════════════════════════════════════ */
+/* initial demo layout — mirrors the planning-editor shell */
+state.layout={split:"row",ratio:.3,
+  a:newLeaf(["timeline","config","assets","paytable","fences","books","sim","notes"]),
+  b:{split:"col",ratio:.6,
+    a:newLeaf(["game"]),
+    b:{split:"row",ratio:.5,
+      a:newLeaf(["ref-a"]),
+      b:newLeaf(["ref-b"])}}};
+/* place the demo float relative to the stage, clear of the docked panes */
+floatAt(newLeaf(["log"]),
+  Math.max(24,stage.clientWidth-420),Math.max(24,stage.clientHeight-560),360,220);
+rerender();
+</script>
+</body></html>

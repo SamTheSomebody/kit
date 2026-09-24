@@ -1,7 +1,7 @@
 {
   "name": "@samthesomebody/kit",
   "version": "0.1.1",
-  "description": "Tool chrome layout recipes + Svelte controls. Dock optional (not in this package yet).",
+  "description": "Tool chrome layout recipes + Svelte controls. Optional shell: @samthesomebody/dock (separate package).",
   "type": "module",
   "license": "MIT",
   "repository": {

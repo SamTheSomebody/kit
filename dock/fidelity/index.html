@@ -1,0 +1,177 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Dock Kit — fidelity harness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" />
+<style>
+  /* tool-ui Dracula token freeze — verbatim from tools/ui/tokens.css, as the
+	   signed artifact carries it. The kit itself defines no colour: it reads
+	   these, so the harness must supply them exactly as a tool would. */
+  :root {
+    --tool-bg: #282a36;
+    --tool-panel: #21222c;
+    --tool-panel-hover: #44475a;
+    --tool-accent: #bd93f9;
+    --tool-accent-hover: #d6acff;
+    --tool-highlight: #f1fa8c;
+    --tool-text: #f8f8f2;
+    --tool-muted: #6272a4;
+    --tool-danger: #ff5555;
+    --tool-success: #50fa7b;
+    --tool-border: #44475a;
+    --tool-font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --tool-space-1: 4px;
+    --tool-space-2: 8px;
+    --tool-space-3: 12px;
+    --tool-space-4: 16px;
+    --tool-scroll-reach: 48px;
+    --tool-font-size-body: 12px;
+    --tool-font-size-title: 18px;
+    --tool-duration-press: 90ms;
+    --tool-duration-fast: 150ms;
+    --tool-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --tool-shadow-1: 0 6px 18px rgba(0, 0, 0, 0.35);
+    --tool-shadow-2: 0 12px 36px rgba(0, 0, 0, 0.55);
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+    background: var(--tool-bg);
+    color: var(--tool-text);
+    font-family: var(--tool-font);
+    font-size: var(--tool-font-size-body);
+    overflow: hidden;
+  }
+  /* base resets the artifact carries and phase 2 promotes into tokens.css */
+  button {
+    font-family: var(--tool-font);
+    color: var(--tool-text);
+  }
+  ::selection {
+    background: var(--tool-accent);
+    color: var(--tool-panel);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--tool-accent);
+    outline-offset: 1px;
+  }
+
+  /* final-usage shell: the kit alone fills the viewport */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  #stage {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── demo consumer content (NOT part of the kit contract) ─────────── */
+  .demo-rows {
+    padding: var(--tool-space-2);
+  }
+  .demo-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: var(--tool-font-size-body);
+    min-width: 0;
+  }
+  .demo-row:hover {
+    background: var(--tool-panel-hover);
+  }
+  .demo-row .k {
+    color: var(--tool-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .demo-row .m {
+    margin-left: auto;
+    color: var(--tool-muted);
+    font-size: var(--tool-font-size-body);
+    white-space: nowrap;
+    flex: none;
+  }
+  .demo-row .dot {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--tool-muted);
+  }
+  .demo-row .dot.ok {
+    background: var(--tool-success);
+  }
+  .demo-row .dot.hot {
+    background: var(--tool-accent);
+  }
+  .demo-row .sw {
+    flex: none;
+    width: 26px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1px solid var(--tool-border);
+    overflow: hidden;
+    position: relative;
+  }
+  .demo-row .sw canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .demo-log {
+    padding: var(--tool-space-2) var(--tool-space-3);
+    font-size: var(--tool-font-size-body);
+    line-height: 1.8;
+    color: var(--tool-text);
+  }
+  .demo-log .t {
+    color: var(--tool-muted);
+  }
+  .demo-log .ok {
+    color: var(--tool-success);
+  }
+  .demo-log .warn {
+    color: var(--tool-highlight);
+  }
+  .demo-board {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* no rAF loops anywhere — transitions only, and they die here */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+
+<div id="app">
+  <main>
+    <div id="stage"></div>
+  </main>
+</div>
+
+<script type="module" src="./main.ts"></script>

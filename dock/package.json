@@ -1,0 +1,43 @@
+{
+  "name": "@samthesomebody/dock",
+  "version": "0.1.0",
+  "description": "Tool chrome shell: splits, tabs, floats. Depends on @samthesomebody/kit (controls). Kit does not depend on dock.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamTheSomebody/kit.git",
+    "directory": "dock"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./package.json": "./package.json",
+    "./dock.css": "./dock.css",
+    "./compareStage.css": "./compareStage.css",
+    "./timelineSheet.css": "./timelineSheet.css",
+    "./dock.svelte": "./dock.svelte"
+  },
+  "files": [
+    "*.ts",
+    "*.svelte",
+    "*.css",
+    "README.md"
+  ],
+  "dependencies": {
+    "@samthesomebody/kit": "^0.1.1"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "dock",
+    "shell",
+    "splits",
+    "tabs",
+    "svelte",
+    "tooling"
+  ]
+}

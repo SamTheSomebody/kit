@@ -1,0 +1,143 @@
+/* Timeline keyframe sheet chrome — shell layout beside Dock splits.
+   Owned here so editor consumers stay free of structure props. */
+
+.sheet {
+	height: 100%;
+	min-height: 0;
+}
+
+.sheet-head,
+.sheet-head-side,
+.sheet-head-lane {
+	display: flex;
+	flex-wrap: nowrap;
+	min-width: 0;
+}
+
+.sheet-head,
+.sheet-head-side {
+	align-items: center;
+}
+
+.sheet-head {
+	flex: 0 0 auto;
+}
+
+.sheet-head-side {
+	flex: 0 0 var(--sheet-side, max-content);
+	width: var(--sheet-side, max-content);
+	gap: var(--dock-pad);
+	padding: var(--dock-pad);
+	overflow: hidden;
+}
+
+.sheet-clip {
+	flex: 1 1 16ch;
+	min-width: 12ch;
+}
+
+.sheet-rate {
+	flex: 0 0 10rem;
+	min-width: 0;
+}
+
+.sheet-filter {
+	flex: 0 0 10ch;
+	min-width: 8ch;
+}
+
+.sheet-head-side .kit-segment {
+	flex: 0 0 auto;
+}
+
+.sheet-head-side .kit-segment-item {
+	min-width: calc(var(--tool-space-4) + var(--tool-space-4) + var(--dock-divider));
+	justify-content: center;
+}
+
+.sheet-head-value {
+	flex: 0 0 var(--sheet-value, 7ch);
+	width: var(--sheet-value, 7ch);
+}
+
+.sheet-head-gap {
+	flex: 0 0 var(--dock-divider);
+}
+
+.sheet-head-lane {
+	flex: 1 1 0;
+	flex-direction: column;
+	align-items: stretch;
+	padding: var(--dock-pad);
+	gap: var(--dock-pad-tight);
+}
+
+.sheet-body {
+	flex: 1 1 0;
+	min-height: 0;
+	position: relative;
+}
+
+.sheet-body .kit-scroll {
+	height: 100%;
+	min-height: 0;
+}
+
+.sheet-body .kit-scroll.near > .kit-scroll-rail {
+	inset-inline-start: calc(100% - var(--tool-space-3) / 2);
+}
+
+.sheet-rows {
+	width: 100%;
+	min-width: 0;
+	min-height: min-content;
+}
+
+.sheet-tree-names {
+	flex: 0 0 var(--sheet-side, 18rem);
+	width: var(--sheet-side, 18rem);
+	min-width: 0;
+	overflow: hidden;
+}
+
+.sheet-tree-names .kit-tree-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.sheet-tree-names .kit-tree-eye {
+	display: none;
+}
+
+.sheet-tree-values {
+	flex: 0 0 var(--sheet-value, 7ch);
+	width: var(--sheet-value, 7ch);
+	min-width: 0;
+}
+
+.sheet-value {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	height: var(--tool-space-4);
+	padding-inline: var(--dock-pad-tight);
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	font-variant-numeric: tabular-nums;
+	pointer-events: none;
+}
+
+.sheet-value.changed {
+	color: var(--tool-text);
+}
+
+.sheet-lane {
+	position: relative;
+	flex: 1 1 0;
+	min-width: 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+	background: var(--tool-panel);
+}

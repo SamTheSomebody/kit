@@ -1,0 +1,70 @@
+/* Compare / pose stage hosts: fixed followSlot layer + frame ports.
+   Stage owns iframe chrome — not layout kit. Consumers import this; do not
+   redeclare display:flex for pane structure. */
+
+.compare-layer {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	/* Below dividers (`--dock-z-divider`, 5). Frames fill panes edge-to-edge;
+	   higher z stole sash hits. */
+	z-index: 4;
+}
+
+.compare-frame {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: auto;
+	background: var(--tool-panel);
+}
+
+.compare-frame[hidden] {
+	display: none;
+}
+
+/* Centre a fixed/aspect port inside the slot without flex (stage rule). */
+.compare-port {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	overflow: hidden;
+	background: var(--tool-panel);
+	transform: translate(-50%, -50%);
+}
+
+.compare-frame[data-mode="pane"] .compare-port {
+	inset: 0;
+	top: 0;
+	left: 0;
+	transform: none;
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.compare-port iframe,
+.compare-port > div {
+	display: block;
+	border: 0;
+	transform-origin: top left;
+	background: var(--tool-panel);
+}
+
+body.resizing .compare-frame,
+body.tab-drag .compare-frame {
+	pointer-events: none;
+}
+
+/* Size lock: freeze divider between two game slots. */
+body.compare-locked
+	.dock-split.row:has(> :first-child .compare-slot):has(> :last-child .compare-slot):not(
+		:has(.dock-split.row .compare-slot)
+	)
+	> .dock-divider,
+body.compare-locked
+	.dock-split.col:has(> :first-child .compare-slot):has(> :last-child .compare-slot):not(
+		:has(.dock-split.col .compare-slot)
+	)
+	> .dock-divider {
+	pointer-events: none;
+}
