@@ -1,0 +1,121 @@
+/* Button — the key: a plate on a hard edge that latches.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ════════════════════════════════════════════════════════════════════
+   BUTTON CANDIDATES — open question, draft 1
+   The underline button IS the tab device; off a tab strip it reads as a
+   tab that lost its strip. Five replacements, one to be chosen. Each
+   keeps the kit's state machine (rest → hover → active → disabled) and
+   invents no number and no colour: press travel is --dock-divider, the
+   hard edge is --dock-tab-underline, every tint is a color-mix of a
+   --tool-* token.
+   ════════════════════════════════════════════════════════════════════ */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--dock-pad-tight);
+	min-width: 0;
+	padding: var(--dock-pad-tight) var(--dock-pad);
+	background: none;
+	border: var(--dock-divider) solid transparent;
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+	font-weight: 400;
+	line-height: 1;
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		color var(--tool-duration-fast) var(--tool-ease-out),
+		background-color var(--tool-duration-fast) var(--tool-ease-out),
+		border-color var(--tool-duration-fast) var(--tool-ease-out),
+		box-shadow var(--tool-duration-fast) var(--tool-ease-out),
+		transform var(--tool-duration-press) var(--tool-ease-out);
+}
+.btn:not(:disabled):active {
+	transform: translateY(var(--dock-divider));
+}
+.btn:disabled {
+	opacity: var(--tool-disabled-opacity);
+	cursor: default;
+}
+/* ── E · key: slab with a hard edge that flattens on press ───────────── */
+/* The key declares its geometry ONCE — one box-shadow, on the base rule —
+   and every variant only moves `--key-edge`. That is not tidiness: a
+   variant that declared its own box-shadow beat `:active`'s
+   `box-shadow: none` on specificity (a `.btn-key.danger:hover` is one
+   class heavier than `.btn-key:not(:disabled):active`, and pressing a
+   button also hovers it), so the danger key travelled down while keeping
+   its hard edge and the press read wrong. With the edge behind a variable
+   there is exactly one place the press can cancel, and a tone is a
+   recolour rather than a rebuild. */
+.btn-key {
+	--key-edge: var(--tool-border);
+	background: var(--tool-bg);
+	border-color: var(--key-edge);
+	box-shadow: 0 var(--dock-tab-underline) 0 var(--key-edge);
+	margin-block-end: var(--dock-tab-underline);
+}
+.btn-key:hover:not(:disabled),
+.btn-key.is-hover {
+	--key-edge: var(--tool-muted);
+	background: var(--tool-panel-hover);
+}
+/* The key's own trick, and the reason it was chosen: a mode LATCHES DOWN. On = travelled the full 2px with the hard edge gone, so a
+   toggle reads as held in and a momentary press reads as the same motion
+   released. Colour still carries the state; the geometry now agrees with it. */
+.btn-key.on,
+.btn-key[aria-pressed="true"],
+.btn-key[aria-checked="true"] {
+	--key-edge: var(--tool-accent);
+	background: color-mix(in srgb, var(--tool-accent) 18%, var(--tool-bg));
+	color: var(--tool-text);
+	transform: translateY(var(--dock-tab-underline));
+	box-shadow: none;
+}
+.btn-key.on:hover:not(:disabled),
+.btn-key.is-hover.on,
+.btn-key[aria-pressed="true"]:hover:not(:disabled),
+.btn-key[aria-checked="true"]:hover:not(:disabled) {
+	--key-edge: var(--tool-accent);
+	background: color-mix(in srgb, var(--tool-accent) 28%, var(--tool-bg));
+}
+/* a key never goes inside a field — the field's button is a frameless
+   icon (§ Input with button). A worded action gets its own key beside it. */
+.btn-key.primary {
+	--key-edge: color-mix(in srgb, var(--tool-accent) 45%, var(--tool-bg));
+	background: var(--tool-accent);
+	border-color: var(--tool-accent);
+	color: var(--tool-bg);
+}
+.btn-key.primary:hover:not(:disabled),
+.btn-key.primary.is-hover {
+	background: var(--tool-accent-hover);
+	border-color: var(--tool-accent-hover);
+}
+.btn-key:not(:disabled):active {
+	transform: translateY(var(--dock-tab-underline));
+	box-shadow: none;
+}
+/* a recolour and nothing else: three colours, no geometry, no shadow */
+.btn-key.danger {
+	--key-edge: color-mix(in srgb, var(--tool-danger) 55%, var(--tool-bg));
+	color: var(--tool-danger);
+}
+.btn-key.danger:hover:not(:disabled),
+.btn-key.danger.is-hover {
+	--key-edge: var(--tool-danger);
+	background: color-mix(in srgb, var(--tool-danger) 22%, var(--tool-bg));
+}
+/* ── 26 · split button ───────────────────────────────────────────────
+   No new CSS at all: it is a segment of two keys — the action and a caret
+   that opens a menu — so it inherits the butted pad, the seam and every
+   state. `.kit-split` exists to say which it is, not to style it. */
+.kit-split-caret {
+	padding-inline: var(--dock-pad-tight);
+}

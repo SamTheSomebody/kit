@@ -1,0 +1,120 @@
+/* Scroll — the drawn rail the native bar cannot be.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 28 · scrollbar ──────────────────────────────────────────────────
+   Built like the dock's tab strip, because a pane that scrolls has the
+   strip's problem: you cannot see what is past the edge. Same two devices,
+   turned ninety degrees — a gradient fade on whichever side has more, and
+   a bar that only asserts itself when you go for it.
+
+   THE NATIVE SCROLLBAR CANNOT DO THIS, and the reason is not cosmetic.
+   Styling `::-webkit-scrollbar` gets the colours, but macOS decides when
+   an overlay scrollbar is VISIBLE — by default only during a scroll
+   gesture, fading out after. A bar that exists for a second after you
+   already scrolled cannot report where you are, and cannot thicken as you
+   approach it, because it is not there when you approach. It also takes
+   0px of layout width, so styling it wider paints over content.
+
+   So the native bar is hidden outright, exactly as the strip hides its
+   own, and the rail is drawn:
+
+     .kit-scroll            the frame — holds the chrome, does not scroll
+       .kit-scroll-view     the scrollport (native bar hidden)
+       .kit-scroll-fade     ×2, the strip's gradient, per side
+       .kit-scroll-rail     hairline track + accent thumb
+
+   THE RAIL IS A PROGRESS BAR: track in --tool-border, the visible run in
+   --tool-accent at `--view` long and `--at` down — the same two colours
+   `.kit-progress` uses for the same statement, and now genuinely always
+   visible.
+
+   IT GROWS OUTWARD, LEFT EDGE FIXED: the hairline sits on the pane's own
+   inner edge and every pixel of growth happens on the far side of it —
+   1px at rest, half of --tool-space-3 (6px) once the pointer is within
+   --tool-scroll-reach. Nothing is reserved and nothing is covered: the
+   content runs to the full width of the pane, and the rail expands into
+   whatever is outside it. A pane therefore wants that 6px of
+   clearance on its trailing side, and where it has none the expanded rail
+   overlays its neighbour for as long as the pointer is there — which is
+   the trade every overlay scrollbar makes, made deliberately.
+
+   The rail takes no pointer events until it is thick enough to aim at. */
+.kit-scroll {
+	position: relative;
+	display: flex;
+	min-height: 0;
+	min-width: 0;
+}
+.kit-scroll-view {
+	flex: 1 1 auto;
+	min-height: 0;
+	min-width: 0;
+	overflow: auto;
+	scrollbar-width: none;
+}
+.kit-scroll-view::-webkit-scrollbar {
+	display: none;
+}
+/* the strip's fade, per side, shown only where there is more */
+.kit-scroll-fade {
+	position: absolute;
+	inset-inline: 0;
+	height: var(--tool-space-4);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-scroll-fade.up {
+	top: 0;
+	background: linear-gradient(180deg, var(--tool-panel), transparent);
+}
+.kit-scroll-fade.down {
+	bottom: 0;
+	background: linear-gradient(0deg, var(--tool-panel), transparent);
+}
+.kit-scroll.can-up .kit-scroll-fade.up,
+.kit-scroll.can-down .kit-scroll-fade.down {
+	opacity: 1;
+}
+.kit-scroll-rail {
+	position: absolute;
+	inset-block: 0;
+	/* the INNER edge is what stays put: the hairline sits on the pane's
+	   own edge and the width runs outward from there, so growing it never
+	   moves over content and needs no gutter held open for it */
+	inset-inline-start: calc(100% - var(--dock-divider));
+	width: var(--dock-divider);
+	background: var(--tool-border);
+	opacity: 0;
+	pointer-events: none;
+	transition:
+		width var(--tool-duration-fast) var(--tool-ease-out),
+		opacity var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-scroll.has-more .kit-scroll-rail {
+	opacity: 1;
+}
+.kit-scroll.near .kit-scroll-rail {
+	/* half of --tool-space-3: enough to aim a pointer at without the bar
+	   becoming a column of its own — expressed as the token halved rather
+	   than a 6px literal, so it still moves when the scale does */
+	width: calc(var(--tool-space-3) / 2);
+	/* only aimable once it is thick enough to aim at */
+	pointer-events: auto;
+	cursor: pointer;
+}
+.kit-scroll-thumb {
+	position: absolute;
+	inset-inline: 0;
+	top: calc(var(--at, 0) * 1%);
+	height: calc(var(--view, 100) * 1%);
+	background: var(--tool-accent);
+}
+.kit-scroll.dragging .kit-scroll-thumb {
+	background: var(--tool-accent-hover);
+}

@@ -1,0 +1,225 @@
+/* Tree — plain, multi-select, and reorder.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 13 · toggle tree ────────────────────────────────────────────────── */
+.kit-tree {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	width: 100%;
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+}
+/* nesting IS the container: one level of indent, one hairline guide,
+   recursive without a depth variable to keep in sync */
+.kit-tree-children {
+	display: flex;
+	flex-direction: column;
+	margin-inline-start: var(--tool-space-3);
+	border-inline-start: var(--dock-divider) solid var(--tool-border);
+}
+.kit-tree-children[hidden] {
+	display: none;
+}
+/* ── the row is 16px, and there is no other height ───────────────────
+   The 22px row the artifact signed is right for a list you READ — a dozen
+   entries, each one a decision. It is wrong for a list you SCAN, and every
+   tree in the estate is the second kind: a scene graph is two hundred rows
+   of which you want one, and at 22px a pane shows fifteen of them. That
+   used to be `.kit-tree.dense`, worn by the one consumer that needed it;
+   it is the row now, and the variant is gone ([HUMAN] Sam 2026-09-07,
+   "can we have dense be the default and drop all variants" — a tree with
+   two heights is a choice every caller has to make and only one of them
+   ever made).
+
+   It keeps every mark and every target — the twisty is still the full
+   caption line tall, the eye is still a button — and spends only the air:
+   the block padding is 2px and the row gap the same, which is 16px and
+   half again as many rows in one pane. THE INLINE PADDING IS UNTOUCHED,
+   because that is the indent's own column and shrinking it would move
+   every depth. */
+.kit-tree-row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: calc(var(--tool-space-1) / 2);
+	min-width: 0;
+	padding: calc(var(--tool-space-1) / 2) var(--dock-pad-tight);
+	/* THE INDENT IS THE DEPTH, and the depth is a number the row carries
+	   rather than a calc each renderer spells out inline for itself — which
+	   is what both trees in the estate were doing, two places for one rule
+	   and two places for the guides below to drift out of step with. */
+	padding-inline-start: calc(var(--dock-pad-tight) + var(--kit-tree-depth, 0) * var(--tool-space-3));
+	border-inline-start: var(--dock-tab-underline) solid transparent;
+	color: var(--tool-text);
+	cursor: pointer;
+	transition: background-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+/* ── the depth guides ────────────────────────────────────────────────
+   A hairline dropping from each ANCESTOR'S TWISTY, down through every row
+   that twisty is currently showing. A flat list of rows says depth only by
+   where its labels start, and at 12px a step that is easy to miss on one
+   row and impossible to trace over twenty; the lines make the column the
+   eye follows back up to the toggle that opened it.
+
+   Drawn, not built: one repeating gradient over the row's own indent —
+   period `--tool-space-3`, exactly the indent step — rather than `depth`
+   spans per row, so a two-hundred-row scene graph adds no elements. The
+   pseudo-element starts half a twisty in, so the k-th line lands on the
+   centre of the twisty column at depth k, and it is `depth` steps wide, so
+   the last line is the one belonging to the row's own parent and nothing is
+   drawn past the label.
+
+   Above the row's background rather than beneath it: the guide has to stay
+   readable through hover and through the selected row's accent wash, and
+   both of those live on the row itself. */
+.kit-tree {
+	/* the centre of the twisty column — 8px wide, not the 12px indent step */
+	--kit-tree-guide-offset: calc(var(--tool-space-2) / 2);
+}
+.kit-tree-row::before {
+	content: "";
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: calc(var(--dock-pad-tight) + var(--kit-tree-guide-offset, var(--tool-space-2) / 2));
+	width: calc(var(--kit-tree-depth, 0) * var(--tool-space-3));
+	background-image: repeating-linear-gradient(
+		to right,
+		var(--tool-border) 0 var(--dock-divider),
+		transparent var(--dock-divider) var(--tool-space-3)
+	);
+	pointer-events: none;
+}
+/* the one place the kit cannot speak logically — a gradient has no inline
+   axis — so the direction is stated for both */
+.kit-tree-row:dir(rtl)::before {
+	background-image: repeating-linear-gradient(
+		to left,
+		var(--tool-border) 0 var(--dock-divider),
+		transparent var(--dock-divider) var(--tool-space-3)
+	);
+}
+.kit-tree-row:hover,
+.kit-tree-row.is-hover,
+.kit-table-row:hover,
+.kit-table-row.is-hover {
+	background: color-mix(in srgb, var(--tool-panel-hover) 40%, transparent);
+}
+/* selected row takes the leading accent bar — the tab's underline turned
+   onto the row's leading edge. Tree row and table row ARE one primitive:
+   same hover, same selection, same disabled, stated once here. */
+.kit-tree-row.on,
+.kit-table-row.on {
+	border-inline-start-color: var(--tool-accent);
+	background: color-mix(in srgb, var(--tool-accent) 12%, transparent);
+}
+.kit-tree-row.disabled,
+.kit-table-row.disabled {
+	opacity: var(--tool-disabled-opacity);
+}
+/* DEFAULT tree carries no checkbox: selection is the bar, visibility is
+   the eye and the label tone — two axes, two marks. `.select` adds
+   checkboxes for the one job an eye cannot do: a nested SET. */
+.kit-tree-row.off .kit-tree-label {
+	color: var(--tool-muted);
+}
+/* 8px, NOT the 12px indent step: the twisty is a caret, and the step is
+   how far a level moves. They were the same number while the row was 22px
+   and nothing depended on their being one. */
+.kit-tree-twist {
+	flex: none;
+	width: var(--tool-space-2);
+	padding: 0;
+	background: none;
+	border: 0;
+	color: var(--tool-muted);
+	font-family: var(--tool-font);
+	font-size: inherit;
+	line-height: 1;
+	cursor: pointer;
+	transition:
+		color var(--tool-duration-fast) var(--tool-ease-out),
+		transform var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-tree-twist[aria-expanded="false"] {
+	transform: rotate(-90deg);
+}
+/* a leaf keeps the twisty's width so every row's label starts on the same
+   column — an indent that only some rows honour is not an indent */
+.kit-tree-twist.leaf {
+	visibility: hidden;
+	cursor: default;
+}
+/* The row's own type — what a node IS when its label does not say. A
+   TRAILING label in its own right-hand column ([HUMAN] Sam, 2026-09-07),
+   the way an inspector labels a field's kind at the end of the line: the
+   types then line up as one column to scan, where in brackets after the
+   name (`background (Sprite)`) each one sat wherever that name happened to
+   end. `margin-inline-start: auto` is what puts it there, so a row needs no
+   growing sibling to push it — and it is a no-op when the row has one.
+
+   IT IS THE FIRST THING TO GO when the pane narrows, which is the shrink
+   weight of 100,000: flexbox shrinks its children in PROPORTION to weight ×
+   base size, so against a source label at 1,000 and a name at 1 this one
+   absorbs ~99% of the first pixel of squeeze and the other two are untouched
+   until it has nothing left. Dimmer than the other muted marks, too — it is
+   the row's last-resort reading, and at full `--tool-muted` a column of
+   `Container` down the pane pulled the eye off the names. */
+.kit-tree-type {
+	flex: 0 100000 auto;
+	min-width: 0;
+	margin-inline-start: auto;
+	overflow: hidden;
+	color: color-mix(in srgb, var(--tool-muted) 70%, transparent);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.kit-tree-row:hover .kit-tree-twist,
+.kit-tree-row.is-hover .kit-tree-twist {
+	color: var(--tool-text);
+}
+.kit-tree-count {
+	margin-inline-start: auto;
+	padding-inline-start: var(--dock-pad-tight);
+	color: var(--tool-muted);
+	font-variant-numeric: tabular-nums;
+}
+.kit-tree-eye {
+	margin-inline-start: auto;
+	padding-inline-start: var(--dock-pad-tight);
+}
+/* ── 25 · tree reorder ───────────────────────────────────────────────
+   `.dock-insert`'s device: a 2px accent bar where the row will land. WHICH
+   EDGE depends on the pointer, not on the row: past the target's midpoint
+   the bar moves to its bottom edge and the drop lands after it. A bar that
+   only ever sat on top made the last position in a list unreachable, and
+   made every drop feel like it went one row too far.
+
+   The grip is the drawn handle and it is the only thing that starts a drag
+   — a row that dragged from anywhere could not also be a row you click to
+   select. */
+.kit-tree-row.dropmark {
+	box-shadow: inset 0 var(--dock-tab-underline) 0 var(--tool-accent);
+}
+.kit-tree-row.dropmark-after {
+	box-shadow: inset 0 calc(-1 * var(--dock-tab-underline)) 0 var(--tool-accent);
+}
+.kit-tree-row.dragging {
+	opacity: var(--dock-drag-opacity);
+}
+/* The grip TAKES THE TWISTY'S COLUMN. Both are 12px, so a leaf row that
+   can be dragged puts the grip where the twisty would have been rather
+   than beside a hidden one — which is what it was doing, and it pushed
+   every label 22px off the grip for no reason anyone could see. A row with
+   real children keeps its twisty and the grip follows it. */
+.kit-tree-grip {
+	flex: none;
+	width: var(--tool-space-2);
+	justify-content: center;
+	cursor: grab;
+}

@@ -1,0 +1,25 @@
+/* Select — the field, plus a caret that is clickable.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+.kit-caret {
+	position: absolute;
+	inset-inline-end: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 0;
+	flex: none;
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+}
+.kit-field:hover .kit-caret,
+.kit-field.is-hover .kit-caret,
+.kit-field:focus-within .kit-caret,
+.kit-field.is-focus .kit-caret {
+	color: var(--tool-text);
+}

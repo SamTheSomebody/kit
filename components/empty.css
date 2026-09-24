@@ -1,0 +1,26 @@
+/* Empty state.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 22 · empty state ────────────────────────────────────────────────
+   Lifted from `.dock-empty`, sentence and all: centred, muted, on the
+   stage ground, and it may carry one key. A pane with nothing in it is
+   the first thing a new tool shows, and every tool was improvising it. */
+.kit-empty {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--dock-pad);
+	min-height: 0;
+	padding: var(--tool-space-4);
+	background: var(--tool-bg);
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	text-align: center;
+}

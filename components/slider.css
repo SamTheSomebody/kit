@@ -1,0 +1,209 @@
+/* Slider — clamped, unclamped, dual, stepped.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+.kit-value {
+	color: var(--tool-text);
+	font-size: var(--tool-font-size-body);
+	font-variant-numeric: tabular-nums;
+}
+/* ── 14 · slider ─────────────────────────────────────────────────────── */
+.kit-slider {
+	display: flex;
+	align-items: center;
+	gap: var(--dock-pad);
+	min-width: 0;
+	width: 100%;
+	font-size: var(--tool-font-size-body);
+}
+.kit-slider input[type="range"] {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: var(--tool-space-3);
+	margin: 0;
+	appearance: none;
+	background: none;
+	cursor: pointer;
+}
+.kit-slider input[type="range"]:focus {
+	outline: 0;
+}
+.kit-slider input[type="range"]:disabled {
+	cursor: default;
+}
+.kit-slider.disabled {
+	opacity: var(--tool-disabled-opacity);
+}
+/* the set value is accent, exactly as a checked box is — value is not a
+   state. --fill is the percentage, written by the input handler. */
+.kit-slider input[type="range"]::-webkit-slider-runnable-track {
+	height: var(--dock-tab-underline);
+	background: linear-gradient(
+		to right,
+		var(--tool-accent) calc(var(--fill, 0) * 1%),
+		var(--tool-border) calc(var(--fill, 0) * 1%)
+	);
+}
+.kit-slider input[type="range"]::-moz-range-track {
+	height: var(--dock-tab-underline);
+	background: linear-gradient(
+		to right,
+		var(--tool-accent) calc(var(--fill, 0) * 1%),
+		var(--tool-border) calc(var(--fill, 0) * 1%)
+	);
+}
+.kit-slider input[type="range"]::-webkit-slider-thumb {
+	appearance: none;
+	width: var(--dock-pad-tight);
+	height: var(--tool-space-3);
+	/* physical margin-top on purpose: the UA thumb pseudo-element is the one
+	   place logical properties are not reliable */
+	margin-top: calc((var(--dock-tab-underline) - var(--tool-space-3)) / 2);
+	border: 0;
+	background: var(--tool-muted);
+	transition: background-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-slider input[type="range"]::-moz-range-thumb {
+	width: var(--dock-pad-tight);
+	height: var(--tool-space-3);
+	border: 0;
+	border-radius: 0;
+	background: var(--tool-muted);
+}
+.kit-slider:hover input[type="range"]:not(:disabled)::-webkit-slider-thumb,
+.kit-slider.is-hover input[type="range"]::-webkit-slider-thumb {
+	background: var(--tool-text);
+}
+.kit-slider:hover input[type="range"]:not(:disabled)::-moz-range-thumb,
+.kit-slider.is-hover input[type="range"]::-moz-range-thumb {
+	background: var(--tool-text);
+}
+.kit-slider input[type="range"]:active::-webkit-slider-thumb,
+.kit-slider input[type="range"]:focus-visible::-webkit-slider-thumb,
+.kit-slider.is-focus input[type="range"]::-webkit-slider-thumb {
+	background: var(--tool-accent);
+}
+.kit-slider input[type="range"]:active::-moz-range-thumb,
+.kit-slider input[type="range"]:focus-visible::-moz-range-thumb,
+.kit-slider.is-focus input[type="range"]::-moz-range-thumb {
+	background: var(--tool-accent);
+}
+/* ── 27 · dual-handle range · stepped slider ─────────────────────────
+   Two stacked <input type=range> was the first attempt and it was wrong
+   in three ways at once: the upper input covers the lower one, so the
+   lower thumb is unreachable wherever they meet; the thumb-only
+   `pointer-events` trick is Chromium's alone; and the kit's own slider
+   handler answers to any range inside a `.kit-slider`, so dragging one
+   thumb rewrote the other value. A range whose thumbs cannot both be
+   grabbed is not a control.
+
+   So the track is drawn and the knobs are buttons. Same hairline, same
+   accent fill — between the two values now rather than from zero — and
+   the same square knob, which is a real focusable button here and so gets
+   arrow keys for free. Neither knob may cross the other.
+
+   A stepped slider is the ordinary single slider with ticks: a repeating
+   gradient on its track, one tick per step, and a field that steps with
+   it so a value that cannot exist cannot be typed either. */
+.kit-dual {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
+	height: var(--tool-space-3);
+}
+.kit-dual::before {
+	content: "";
+	position: absolute;
+	inset-inline: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	height: var(--dock-tab-underline);
+	background: var(--tool-border);
+}
+.kit-dual-fill {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	inset-inline-start: calc(var(--from, 0) * 1%);
+	inset-inline-end: calc(100% - var(--to, 100) * 1%);
+	height: var(--dock-tab-underline);
+	background: var(--tool-accent);
+}
+.kit-dual-knob {
+	position: absolute;
+	top: 50%;
+	width: var(--dock-pad-tight);
+	height: var(--tool-space-3);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: var(--tool-muted);
+	transform: translate(-50%, -50%);
+	cursor: pointer;
+	transition: background-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-dual-knob[data-knob="from"] {
+	inset-inline-start: calc(var(--from, 0) * 1%);
+}
+.kit-dual-knob[data-knob="to"] {
+	inset-inline-start: calc(var(--to, 100) * 1%);
+}
+/* The SPAN is grabbable too, because the pair is one value and moving it
+   without changing its width is a thing you want far more often than you
+   want either end alone (a window sweeping a distribution, say). It is the
+   knob's own rect with its axes swapped — same part, turned across the
+   track — so it reads as belonging to the pair rather than as a third kind
+   of thing, and it sits at the middle of the fill where the pair's centre
+   is. Same CURSOR as the knobs too ([HUMAN] Sam): `ew-resize` says "a
+   number answers to a sideways drag" on a field (`.kit-scrub`), and a
+   knob is not a number being scrubbed — three parts of one control that
+   are all grabbed the same way should not offer three different cursors. */
+.kit-dual-span {
+	position: absolute;
+	top: 50%;
+	inset-inline-start: calc((var(--from, 0) + var(--to, 100)) / 2 * 1%);
+	width: var(--tool-space-3);
+	height: var(--dock-pad-tight);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: var(--tool-muted);
+	transform: translate(-50%, -50%);
+	cursor: pointer;
+	transition: background-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-slider:hover .kit-dual-knob,
+.kit-slider:hover .kit-dual-span,
+.kit-slider.is-hover .kit-dual-knob,
+.kit-slider.is-hover .kit-dual-span {
+	background: var(--tool-text);
+}
+.kit-dual-knob:active,
+.kit-dual-knob:focus-visible,
+.kit-dual-span:active,
+.kit-dual-span:focus-visible,
+.kit-slider.is-focus .kit-dual-knob,
+.kit-slider.is-focus .kit-dual-span {
+	background: var(--tool-accent);
+}
+.kit-slider.disabled .kit-dual-knob,
+.kit-slider.disabled .kit-dual-span {
+	cursor: default;
+}
+.kit-slider.stepped input[type="range"]::-webkit-slider-runnable-track {
+	background:
+		repeating-linear-gradient(
+			90deg,
+			var(--tool-border) 0 var(--dock-divider),
+			transparent var(--dock-divider) calc(100% / var(--steps, 10))
+		),
+		linear-gradient(
+			to right,
+			var(--tool-accent) calc(var(--fill, 0) * 1%),
+			var(--tool-border) calc(var(--fill, 0) * 1%)
+		);
+}

@@ -1,0 +1,50 @@
+/* Badge — a readout, not a control.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 15 · badge ──────────────────────────────────────────────────────
+   A readout, not a control: no hover, no focus, no disabled of its own —
+   it dims with the row it sits in. Tone is the axis instead of state. For
+   a bare severity marker use the tab's status light; a badge is for a
+   VALUE with a word or a count on it. Departs from today's `.badge` in
+   the art tools by dropping `--tool-radius`. */
+.kit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dock-pad-tight);
+  padding-inline: var(--dock-pad-tight);
+  border: var(--dock-divider) solid var(--tool-border);
+  color: var(--tool-muted);
+  font-size: var(--tool-font-size-body);
+  line-height: var(--tool-space-4);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.kit-badge[data-tone='ok'] {
+  color: var(--tool-success);
+  border-color: color-mix(in srgb, var(--tool-success) 55%, transparent);
+}
+.kit-badge[data-tone='warn'] {
+  color: var(--tool-highlight);
+  border-color: color-mix(in srgb, var(--tool-highlight) 55%, transparent);
+}
+.kit-badge[data-tone='danger'] {
+  color: var(--tool-danger);
+  border-color: color-mix(in srgb, var(--tool-danger) 55%, transparent);
+}
+.kit-badge[data-tone='busy'] {
+  color: var(--tool-accent);
+  border-color: color-mix(in srgb, var(--tool-accent) 55%, transparent);
+}
+.kit-badge.disabled {
+  opacity: var(--tool-disabled-opacity);
+}
+/* Fields value Slot: status rides the trailing edge so checkbox / dual-field
+   rows share a column with single-field rows (tree trailing-icon pattern). */
+.kit-column[data-recipe='fields'] .kit-slot > .kit-badge {
+  margin-inline-start: auto;
+}

@@ -1,0 +1,86 @@
+/* Confirm — a dialog on the floating surface.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 20 · confirm dialog ─────────────────────────────────────────────
+   The same floating surface with a sentence and a control row in it. The
+   destructive key needed the ONE thing the kit did not have: a danger
+   tone on a plate. It is the frameless icon's rule scaled up — ink and
+   edge in --tool-danger, filling on hover — and it is deliberately not a
+   `.primary`: the safe way out is the primary, the destructive one is
+   merely available. Order follows the row rules: actions together,
+   destructive last. */
+/* Narrow enough and the keys stop sitting in a row at their own widths
+   and fill the body instead — two half-width targets beat two small ones
+   pushed into a corner. A CONTAINER query, not a media query: this is
+   about the dialog's own width, which is what a dialog in a 200px pane
+   actually has, and nothing about the viewport tells you that. */
+.kit-dialog {
+	container-type: inline-size;
+	display: flex;
+	flex-direction: column;
+	gap: var(--tool-space-3);
+	min-width: 0;
+	/* `container-type: inline-size` brings inline-size containment with it,
+	   which means this box may NOT size itself from its contents — so it
+	   states a width and lets max-width cap it. Left to `auto` it collapsed
+	   to 26px as a centred flex item, because there was nothing else for
+	   its width to come from. */
+	width: 100%;
+	max-width: 44ch;
+	padding: var(--tool-space-3);
+	border: var(--dock-divider) solid var(--surface-border);
+	border-radius: var(--surface-radius);
+	background: var(--surface-bg);
+	box-shadow: var(--surface-shadow-far);
+	font-size: var(--tool-font-size-body);
+}
+.kit-dialog h3 {
+	margin: 0;
+	font-size: var(--tool-font-size-body);
+	font-weight: 600;
+	color: var(--tool-text);
+}
+.kit-dialog p {
+	margin: 0;
+	color: var(--tool-muted);
+	line-height: 1.45;
+}
+.kit-dialog .kit-bar {
+	justify-content: flex-end;
+}
+
+/* Under 200px the two keys fill the body width instead of sitting at their
+   own content width — a dialog that narrow has no room for a right-aligned
+   pair. `container-type: inline-size` is on `.kit-dialog` itself. */
+@container (max-width: 200px) {
+	.kit-dialog .kit-bar,
+	.kit-dialog .kit-bar .kit-bar {
+		width: 100%;
+	}
+	.kit-dialog .kit-bar .btn {
+		flex: 1 1 0;
+		min-width: 0;
+		justify-content: center;
+	}
+}
+
+/* The ground behind the dialog. It dims the work rather than hiding it —
+   the dialog is asking ABOUT something, and a modal that blacks out what it
+   asks about makes you answer from memory. Fixed rather than absolute: a
+   dialog raised from inside a scrolled pane must not scroll away from the
+   question. */
+.kit-dialog-ground {
+	position: fixed;
+	inset: 0;
+	z-index: var(--dock-z-menu);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--tool-space-4);
+	background: color-mix(in srgb, var(--tool-bg) 55%, transparent);
+}

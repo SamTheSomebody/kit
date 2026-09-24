@@ -1,0 +1,157 @@
+/* Notification — the fading stack.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ══════════════════════════════════════════════════════════════════
+   THE ELEVEN — drawn 2026-09-04, in the order the to-draw list had them.
+   Nothing here invents a device: every one is an assembly of what the kit
+   already has, and where that was not possible it is said so.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 19 · notification ───────────────────────────────────────────────
+   A floating surface that arrives on its own, leaves on its own, and can
+   be sent away early. Three questions were open and all three are
+   answered the same way — by giving the row itself the job:
+
+   PRESSING IT DISMISSES IT. The whole note is the target, so it is a
+   <button>. A transient thing you are trying to read should not also ask
+   you to hit a 12px glyph in its corner.
+
+   THE STATUS LIGHT BECOMES THE ×. Not an extra glyph appearing on hover —
+   the dot IS where the × goes, in the cell the eye is already on, so
+   nothing shifts and no gutter is held open for something usually absent.
+   (Holding one open is the mistake the menu's tick column was making.)
+
+   THE TIMER IS ON THE BOTTOM EDGE, in the tone's own colour, draining
+   right to left. Bottom because that is where this kit puts a state: the
+   tab's accent underline, the key's hard edge, a field's rule. A bar
+   across the top would be the only top-edge mark in the kit.
+
+   PRESSING IS INSTANT; EXPIRING FADES. A press removes the note in the
+   same frame, so the stack closes up before the next click lands and a
+   pile of them can be cleared as fast as you can hit them. A note that
+   leaves on its own fades instead, and takes no pointer events while it
+   does.
+
+   HOVERING ANY NOTE PAUSES EVERY TIMER — `.kit-notes:hover`, no script.
+   A stack is read as one thing, so pausing only the note under the
+   pointer would let the others expire while you were reading them.
+
+   THE BOTTOM EDGE IS UNIVERSAL. A note with a dwell DRAINS it; a note
+   reporting work with no total SWEEPS instead, the same third-of-a-track
+   sweep `.kit-progress` uses. One place to look either way, and nothing
+   inline in the row competing with the message for width.
+
+   The sweep does NOT pause on hover, and the drain does: a countdown stops
+   because you are reading it, but work does not stop because you looked
+   at it.
+
+   Divergence to sign off: `tools/ui/components/notification.ts` keeps errors on
+   screen forever today. Here everything fades, errors included. */
+/* Bottom-right, over the work. `pointer-events: none` on the stack is
+   load-bearing, not tidiness: the dock's root-band drop target is the
+   outermost 12px of its stage, so a stack that ate pointer events would
+   swallow root-split drops in the corner it sits in. The notes themselves
+   take them back, because pressing one is how it goes. */
+.kit-notes {
+	position: fixed;
+	inset-inline-end: var(--tool-space-3);
+	bottom: var(--tool-space-3);
+	z-index: 80;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: var(--dock-pad-tight);
+	min-width: 0;
+	width: min(22rem, 60%);
+	pointer-events: none;
+}
+.kit-notes > .kit-note {
+	pointer-events: auto;
+}
+.kit-note {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: var(--dock-pad);
+	min-width: 0;
+	width: 100%;
+	padding: var(--dock-pad-tight) var(--dock-pad);
+	border: var(--dock-divider) solid var(--surface-border);
+	border-radius: var(--surface-radius);
+	background: var(--surface-bg);
+	box-shadow: var(--surface-shadow-far);
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+	line-height: 1.4;
+	text-align: left;
+	cursor: pointer;
+	overflow: hidden;
+	transition:
+		background-color var(--tool-duration-fast) var(--tool-ease-out),
+		opacity var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-note:hover,
+.kit-note.is-hover {
+	background: color-mix(in srgb, var(--tool-panel-hover) 30%, var(--surface-bg));
+}
+/* on the way out — only an expiry fades, and while it does it is not a
+   target: a fading note that still took clicks would eat the press aimed
+   at whatever moved up behind it */
+.kit-note.leaving {
+	opacity: 0;
+	pointer-events: none;
+}
+.kit-note-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.kit-note-count {
+	flex: none;
+	margin-inline-start: auto;
+	color: var(--tool-muted);
+	font-variant-numeric: tabular-nums;
+}
+.kit-note-close {
+	position: absolute;
+	inset-inline-start: var(--dock-pad);
+	color: var(--tool-danger);
+	line-height: 1;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-note:hover .kit-note-close,
+.kit-note.is-hover .kit-note-close,
+.kit-note:focus-visible .kit-note-close {
+	opacity: 1;
+}
+/* the timer: the tone's colour on the bottom edge, draining away */
+.kit-note-timer {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	height: var(--dock-tab-underline);
+	background: var(--tool-muted);
+	transform-origin: left center;
+	animation: kit-drain var(--tool-note-dwell) linear forwards;
+}
+/* work with no total: the same edge, sweeping rather than draining */
+.kit-note-timer.sweep {
+	inset-inline: 0 auto;
+	width: 34%;
+	transform-origin: center;
+	animation: kit-sweep var(--tool-duration-sweep) var(--tool-ease-out) infinite;
+}
+/* hovering ANY note in the stack holds every countdown where it is — but
+   not a sweep, which is reporting something that did not stop */
+.kit-notes:hover .kit-note-timer:not(.sweep),
+.kit-notes.is-hover .kit-note-timer:not(.sweep),
+.kit-note-timer.paused {
+	animation-play-state: paused;
+}

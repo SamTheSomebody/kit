@@ -1,0 +1,24 @@
+/* Meta — a definition list of tabular facts.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+.kit-meta {
+	display: grid;
+	grid-template-columns: max-content minmax(0, 1fr);
+	gap: 2px var(--dock-pad);
+	margin: 0;
+	font-size: var(--tool-font-size-body);
+}
+.kit-meta dt {
+	color: var(--tool-muted);
+}
+.kit-meta dd {
+	margin: 0;
+	color: var(--tool-text);
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
+}

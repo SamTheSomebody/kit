@@ -1,0 +1,51 @@
+/* Corner action — a MODIFIER.
+
+   It names `.kit-tip.kit-corner-action` as well as itself, because a corner
+   action is usually a tooltipped icon button and `.kit-tip` sets
+   `position: relative` so its bubble can hang off it. Import order will not
+   settle that: `tooltip.css` arrives through the component graph, not
+   through `index.css`, so which one a bundler emits last is not ours to
+   decide. Two classes beat one, wherever they land.
+
+   (Found the only way it could be: the star sat at the bottom-left of the
+   textarea it was supposed to float over, `position` computing to
+   `relative`. Absolute positioning does not disturb the tooltip — the
+   bubble hangs off the action's own box either way.) */
+
+/* ── AN ACTION IN A CORNER ────────────────────────────────────────────
+   The multiline's generate star, generalised 2026-09-05: the same three
+   states wherever the thing being filled is big enough to hold a mark in
+   its corner rather than beside it — a textarea, a thumbnail.
+
+     empty          visible — something with a way to fill it is an
+                    invitation; this is the only time it asks for itself
+     content, idle  hidden  — the content is the content now, not the button
+     content, hover visible — you went looking for it
+
+   And `data-typing` beats all three, because a mark blinking in the corner
+   of a box you are writing in is the worst possible place for it.
+
+   The HOST carries `data-empty` / `data-typing` and `position: relative`;
+   the action carries this class. Nothing else is shared, which is why this
+   is a recipe rather than a component. */
+.kit-corner-action,
+.kit-tip.kit-corner-action {
+	position: absolute;
+	top: var(--dock-pad-tight);
+	inset-inline-end: var(--dock-pad-tight);
+	z-index: 1;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	opacity: 0;
+	transition: opacity var(--tool-duration-fast) var(--tool-ease-out);
+}
+:hover > .kit-corner-action,
+.is-hover > .kit-corner-action,
+[data-empty] > .kit-corner-action {
+	opacity: 1;
+}
+/* typing wins over every reason to be visible */
+[data-typing] > .kit-corner-action {
+	opacity: 0;
+}

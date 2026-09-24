@@ -1,0 +1,45 @@
+/* Pane — what a tool puts inside a dock pane.
+   Ported with the control kit (docs/specs/2026-09-04-control-kit-design.md);
+   promoted 2026-09-05 when the fifth tool wrote its fourth different padding
+   for the same box. */
+
+.kit-pane {
+	display: flex;
+	flex-direction: column;
+	gap: var(--dock-pad);
+	/* min-height, not height: a pane's height is the dock's to decide, and a
+	   declared 100% here fought the flex parent in three tools. */
+	min-height: 0;
+	height: 100%;
+	padding: var(--dock-pad);
+	overflow: auto;
+}
+
+/* A CHECKBOX THAT IS A ROW IN A PANE STANDS A ROW TALL. A pane pads once at
+   the edge and spaces its children by one gap, which only reads as a rhythm
+   if the children are a rhythm — and a checkbox carries no block padding at
+   all, because everywhere ELSE it appears something owns its height: a tree
+   row, a 16px menu or table row, a control row where the key beside it sets
+   the height and `align-items: center` places it. Alone in a pane it IS the
+   row, and 12px of tick and caption under a 26px key broke the rhythm at
+   exactly the line a settings reader came for.
+   So it takes the KEY's own block metrics here and nowhere else — tight
+   padding plus the hairline the key has and it does not, and the 2px the
+   hard edge hangs below — which lands it on 26px with neither side naming a
+   number. `padding`, not a `min-height`: a pane's children are flex items in
+   a column, and a declared minimum REPLACES the automatic content minimum,
+   so a floor set that way squeezes a taller control (a field's own 29px) and
+   clips it. Padding is inside the intrinsic size and cannot.
+   `fill` is exempt on principle: its one child owns the whole box. */
+.kit-pane:not(.fill) > .kit-check {
+	padding-block: calc(var(--dock-pad-tight) + var(--dock-divider));
+	margin-block-end: var(--dock-tab-underline);
+}
+
+/* Content that IS the pane — an iframe slot, a canvas, a terminal. No
+   padding to letterbox it, no scrolling to fight its own. */
+.kit-pane.fill {
+	gap: 0;
+	padding: 0;
+	overflow: hidden;
+}

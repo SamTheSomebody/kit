@@ -1,0 +1,75 @@
+/* Checkbox.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 12 · checkbox ───────────────────────────────────────────────────── */
+.kit-check {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--dock-pad);
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+	cursor: pointer;
+	transition: color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-check input {
+	flex: none;
+	appearance: none;
+	margin: 0;
+	width: 12px;
+	height: 12px;
+	background: color-mix(in srgb, var(--tool-bg) 70%, transparent);
+	border: var(--dock-divider) solid var(--tool-border);
+	cursor: inherit;
+	display: grid;
+	place-content: center;
+	transition: border-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-check input::after {
+	content: "";
+	width: 6px;
+	height: 6px;
+	background: var(--tool-accent);
+	transform: scale(0);
+	transition: transform var(--tool-duration-press) var(--tool-ease-out);
+}
+.kit-check input:checked {
+	border-color: var(--tool-accent);
+}
+.kit-check input:checked::after {
+	transform: scale(1);
+}
+.kit-check:hover:not(.disabled),
+.kit-check.is-hover {
+	color: var(--tool-text);
+}
+.kit-check:hover:not(.disabled) input,
+.kit-check.is-hover input {
+	border-color: var(--tool-muted);
+}
+.kit-check.disabled {
+	opacity: var(--tool-disabled-opacity);
+	cursor: default;
+}
+.kit-tree-row .kit-check {
+	min-width: 0;
+	color: inherit;
+}
+.kit-tree-row .kit-check span,
+.kit-tree-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+/* a parent whose children disagree — a bar, not a tick */
+.kit-check.mixed input {
+	border-color: var(--tool-accent);
+}
+.kit-check.mixed input::after {
+	transform: scaleY(0.34);
+}

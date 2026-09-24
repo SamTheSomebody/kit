@@ -1,0 +1,47 @@
+{
+  "name": "@samthesomebody/kit",
+  "version": "0.1.0",
+  "description": "Tool chrome layout recipes + Svelte controls. Dock optional (not in this package yet).",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamTheSomebody/kit.git"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./layout.css": "./layout.css",
+    "./tokens.css": "./tokens.css",
+    "./column.svelte": "./column.svelte",
+    "./columns.svelte": "./columns.svelte",
+    "./row.svelte": "./row.svelte",
+    "./container.svelte": "./container.svelte",
+    "./slot.svelte": "./slot.svelte",
+    "./components": "./components/index.ts",
+    "./components/index.css": "./components/index.css",
+    "./components/*.css": "./components/*.css",
+    "./components/*.svelte": "./components/*.svelte"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "files": [
+    "*.ts",
+    "*.svelte",
+    "*.css",
+    "*.json",
+    "components",
+    "fonts",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "layout",
+    "svelte",
+    "tooling",
+    "chrome",
+    "ui-kit"
+  ]
+}

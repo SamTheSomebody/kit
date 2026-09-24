@@ -1,0 +1,39 @@
+/* Label.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 10 · toggle with label ──────────────────────────────────────────
+   There is no switch. A setting that is on or off is a key that stays
+   down — the same plate, the same 2px travel, the same accent — and the
+   label rides inside it, so this control and the toggle button are one
+   thing with one rule set. `role="switch"` + `aria-checked` is what makes
+   it a SETTING rather than a pressed button, and the key reads that
+   attribute exactly as it reads `aria-pressed`.
+
+   Given up: a column of sliding knobs that can be scanned in one glance.
+   Bought: one device instead of two, and a state that survives being
+   photocopied — travel plus fill, not a knob's 12px of position. */
+
+/* ── 11 · label ──────────────────────────────────────────────────────── */
+.kit-label {
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	letter-spacing: var(--dock-tab-tracking);
+	line-height: 1;
+}
+.kit-label.wrap {
+	line-height: 1.45;
+}
+.kit-label.on {
+	color: var(--tool-text);
+}
+.kit-label.disabled {
+	opacity: var(--tool-disabled-opacity);
+}
+.kit-slider.dual > .kit-label {
+	flex: none;
+}

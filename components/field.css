@@ -1,0 +1,364 @@
+/* Field — text, number, action and message.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 6-9 · text entry: input · input+button · multiline · dropdown ───── */
+.kit-field {
+  display: flex;
+  align-items: center;
+  gap: var(--dock-pad-tight);
+  min-width: 0;
+  width: 100%;
+  padding-block: var(--dock-pad-tight);
+  border-block-end: var(--dock-divider) solid var(--tool-border);
+  color: var(--tool-text);
+  font-size: var(--tool-font-size-body);
+  transition:
+    border-color var(--tool-duration-fast) var(--tool-ease-out),
+    background-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+/* A field has no box, so at rest it is a line of type with a rule under it
+   — easy to miss as a target. Hover lays a wash under it, kept on through
+   focus so clicking in does not make the ground flash away. Quarter-
+   strength `--tool-panel-hover`: the colour every other hover in the kit
+   uses, at the weight text can sit on. */
+.kit-field:hover,
+.kit-field.is-hover,
+.kit-field:focus-within,
+.kit-field.is-focus {
+  background: color-mix(in srgb, var(--tool-panel-hover) 25%, transparent);
+}
+.kit-field:hover,
+.kit-field.is-hover {
+  border-block-end-color: var(--tool-muted);
+}
+.kit-field:focus-within,
+.kit-field.is-focus {
+  border-block-end-color: var(--tool-accent);
+}
+.kit-field input,
+.kit-field select,
+.kit-field textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--tool-text);
+  font-family: var(--tool-font);
+  font-size: var(--tool-font-size-body);
+  line-height: 1.5;
+}
+.kit-field input:focus,
+.kit-field select:focus,
+.kit-field textarea:focus {
+  outline: 0;
+}
+.kit-field ::placeholder {
+  color: var(--tool-muted);
+}
+/* Number fields scrub sideways; native spin buttons do nothing useful and
+   steal end space. Firefox uses appearance; WebKit needs the pseudo hide. */
+.kit-field input[type='number'] {
+  appearance: textfield;
+}
+.kit-field input[type='number']::-webkit-outer-spin-button,
+.kit-field input[type='number']::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+/* The caret is part of the control, not a decal on it: the select is
+   stretched OVER the caret's corner and the caret sits behind it, so a
+   click on the glyph opens the list like a click on the value does. Done
+   with layout rather than a script — `showPicker()` is the scripted
+   version and it is neither universal nor needed. The select's own
+   background is transparent, so the caret reads through it, and the end
+   padding keeps a long option from running under the glyph. */
+.kit-field:has(select) {
+  position: relative;
+}
+.kit-field select {
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding-inline-end: var(--tool-space-4);
+}
+.kit-field select option {
+  background: var(--tool-panel);
+  color: var(--tool-text);
+}
+/* ── the multiline's own action ───────────────────────────────────────
+   Optional, top right, and it earns its place by being absent most of the
+   time. THREE STATES, one rule each:
+
+     empty          visible — an empty box with a way to fill it is an
+                    invitation; this is the only time it asks for itself
+     content, idle  hidden  — the words are the content now, not the button
+     content, hover visible — you went looking for it
+
+   And it HIDES WHILE TYPING, which beats all three: a mark blinking in
+   the corner of a box you are writing in is the worst possible place for
+   it. Moving the pointer brings it back, which is the same gesture that
+   summons it with content anyway.
+
+   The textarea reserves the icon's column so a line of text never runs
+   under it, even in the one state where both are visible at once. */
+.kit-field.multiline {
+  position: relative;
+  display: block;
+  padding: var(--dock-pad-tight) var(--dock-pad);
+  border: var(--dock-divider) solid var(--tool-border);
+  background: color-mix(in srgb, var(--tool-bg) 55%, transparent);
+}
+.kit-field.multiline textarea {
+  display: block;
+  width: 100%;
+  min-height: 4.6em;
+  resize: vertical;
+  /* the icon's column, held open so text never runs beneath it */
+  padding-inline-end: var(--tool-space-4);
+}
+/* The three states are `.kit-corner-action` in `controls.css` — the same
+   recipe a thumbnail's generate star uses, promoted 2026-09-05 when the art
+   tab needed it on an image. All this rule adds is that the multiline's
+   action is one. */
+.kit-field.multiline:hover,
+.kit-field.multiline.is-hover,
+.kit-field.multiline:focus-within,
+.kit-field.multiline.is-focus {
+  /* the region already sits on a ground, so its wash is a step up from
+	   that rather than the transparent one a single line takes */
+  background: color-mix(in srgb, var(--tool-panel-hover) 25%, var(--tool-bg));
+}
+.kit-field.multiline:hover,
+.kit-field.multiline.is-hover {
+  border-color: var(--tool-muted);
+}
+.kit-field.multiline:focus-within,
+.kit-field.multiline.is-focus {
+  border-color: var(--tool-accent);
+}
+.kit-field.disabled,
+.kit-field:has(:disabled) {
+  opacity: var(--tool-disabled-opacity);
+  border-block-end-color: var(--tool-border);
+  cursor: default;
+}
+.kit-field.disabled input,
+.kit-field.disabled select,
+.kit-field.disabled textarea {
+  cursor: default;
+}
+/* the field's own button is a frameless icon: separated from the text by
+   the field gap, and given room either side so the glyph is a target and
+   not a hairline. A tooltip is the native `title`, as tool-ui's Button
+   already takes — a drawn tooltip is still on the to-draw list. */
+/* The field's trailing action, seamed off the text by a hairline. The
+   divider is what makes the slot format-agnostic: a glyph sits in it, and
+   so does a word, with no other rule changing. `align-self: stretch` runs
+   the seam the full height of the line rather than the height of a 12px
+   glyph. */
+.kit-field-action {
+  flex: none;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: var(--dock-pad-tight);
+  /* symmetric, so the glyph sits centred in the slot the divider opens
+	   rather than pinned to the end of the rule — and the worded form takes
+	   the same inset, which is what keeps the two interchangeable */
+  justify-content: center;
+  padding-inline: var(--dock-pad);
+  background: none;
+  border: 0;
+  border-inline-start: var(--dock-divider) solid var(--tool-border);
+  color: var(--tool-muted);
+  font-family: var(--tool-font);
+  font-size: var(--tool-font-size-body);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--tool-duration-fast) var(--tool-ease-out);
+}
+/* A CORNER action is not seamed off anything: it floats over the content
+   rather than sitting beside it, so the divider, the inset and the stretch
+   that make the trailing form work all come off. Order alone would not do
+   it — `controls.css` is imported first, so its `margin: 0` loses to the
+   three properties this file sets after it. */
+.kit-field-action.kit-corner-action {
+  align-self: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.kit-field-action:hover:not(:disabled),
+.kit-field-action.is-hover {
+  color: var(--tool-text);
+}
+.kit-field-action:disabled {
+  opacity: var(--tool-disabled-opacity);
+  cursor: default;
+}
+/* The readout is a FIELD, not a label: a number you can see and cannot
+   type is a wall, and a slider is the one control where the exact value
+   matters more than the gesture. Typing drives the track, dragging drives
+   the number — one value with two ways in. */
+/* Sized to the widest value it can hold and nothing more: the input takes
+   the digits actually in it and the unit its own character, so the field
+   is exactly digits + gap + unit. Any fixed width left slack, and because
+   the figures are right-aligned that slack all showed as a hole in front
+   of a short value. */
+.kit-slider .kit-field {
+  flex: none;
+  width: auto;
+}
+.kit-slider .kit-field input {
+  flex: none;
+  /* Exactly as wide as the number in it, on every slider: 7% is two
+	   cells, not three with a cell of air in front of the 7. Reserving the
+	   range's widest value would keep the track a fixed width, but it pads
+	   every shorter number, and a right-aligned figure shows that padding
+	   as a hole. The trade is that the track's width follows the digit
+	   count — the value gains a cell at 10 and at 100, and the track gives
+	   up that cell. */
+  width: calc(var(--digits, 1) * 1ch);
+  transition: width var(--tool-duration-fast) var(--tool-ease-out);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* ── 21 · field error ────────────────────────────────────────────────
+   The one state the machine did not cover: a field holding something
+   wrong. The rule goes danger and STAYS danger through hover and focus —
+   an invalid field that looks accent while you fix it is lying — and the
+   message sits under it at caption size, in the same danger. */
+.kit-field.invalid,
+.kit-field.invalid:hover,
+.kit-field.invalid:focus-within,
+.kit-field.invalid.is-hover,
+.kit-field.invalid.is-focus {
+  border-block-end-color: var(--tool-danger);
+}
+/* A field and its message are ONE BLOCK. Left as siblings in whatever
+   contains them, the distance between them is that container's `gap` —
+   which in this page's own cells was 7px, three times what the message
+   asks for. The message's padding can only govern if nothing else is
+   spacing them. */
+.kit-field-block {
+  display: block;
+  position: relative;
+  min-width: 0;
+  /* `width: 100%` was right in a column and wrong in a row: it made every
+	   field in a control row take the whole row and stack. `auto` fills a
+	   block parent exactly as before, and the flex basis lets a row lay
+	   several out side by side and share the slack. */
+  width: auto;
+  flex: 1 1 12ch;
+}
+/* Toolbar strips keep fields intrinsic — grow eats the keys beside them. */
+.kit-row[data-recipe='toolbar'] .kit-field-block,
+.kit-bar .kit-field-block {
+  flex: 0 1 auto;
+  max-width: 14rem;
+}
+/* Face-first hang: message must not enlarge the box used for cross-axis
+   align (fields label↔face center). Non-fields: absolute under the block
+   + end margin only. Fields: the Row spans two parent tracks via subgrid
+   so later rows stay clear; face on track 1, message on track 2 — no top
+   margin tax. */
+.kit-field-block:has(> .kit-field-message) {
+  --kit-field-message-hang: calc(var(--tool-font-size-body) * 1.4 + var(--dock-tab-underline));
+  margin-block-end: var(--kit-field-message-hang);
+}
+.kit-field-message {
+  display: block;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  /* hangs off the rule rather than sitting under the field: the message
+	   belongs to the line above it, and the field's own 5px of block
+	   padding already puts air between the two */
+  padding-block-start: var(--dock-tab-underline);
+  color: var(--tool-danger);
+  font-size: var(--tool-font-size-body);
+  line-height: 1.4;
+}
+/* Fields: Row is normally display:contents. With a message it becomes a
+   2-track subgrid so auto-placement for C/D does not land on the hang. */
+.kit-column[data-recipe='fields'] > .kit-row:has(.kit-field-message) {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: span 2;
+  grid-template-columns: subgrid;
+  grid-template-rows: subgrid;
+  align-items: center;
+  column-gap: 0;
+}
+.kit-column[data-recipe='fields'] > .kit-row:has(.kit-field-message) > .kit-label {
+  grid-row: 1;
+  grid-column: 1;
+}
+.kit-column[data-recipe='fields'] > .kit-row:has(.kit-field-message) > .kit-slot {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: var(--dock-pad);
+  align-items: center;
+  min-width: 0;
+}
+.kit-column[data-recipe='fields'] .kit-field-block:has(> .kit-field-message) {
+  display: contents;
+  margin-block: 0;
+}
+.kit-column[data-recipe='fields'] .kit-slot:has(.kit-field-message) .kit-field {
+  grid-row: 1;
+  grid-column: 1;
+  width: auto;
+  min-width: 0;
+  flex: unset;
+}
+.kit-column[data-recipe='fields'] .kit-slot:has(.kit-field-message) > .kit-badge,
+.kit-column[data-recipe='fields'] .kit-slot:has(.kit-field-message) > :not(.kit-field-block) {
+  grid-row: 1;
+  grid-column: 2;
+}
+.kit-column[data-recipe='fields'] .kit-field-message {
+  position: static;
+  grid-row: 2;
+  grid-column: 1 / -1;
+  top: auto;
+  left: auto;
+  right: auto;
+  /* Parent row-gap sits between the two subgrid tracks; cancel so air is
+	   caption pad only — not dock-pad + hang. */
+  margin-block-start: calc(-1 * var(--dock-pad));
+}
+/* The dash belongs to the PAIR, not to either value, so it sits BETWEEN
+   the two fields rather than inside the first: a `–` in the floor's own
+   box reads as the floor's unit, which is exactly what `%` and `×` are.
+   It is the kit's own muted label doing the job, so it costs no class. */
+.kit-slider.dual .kit-field {
+  width: auto;
+}
+
+/* a unit rides inside the field, muted, and never moves */
+.kit-unit {
+  flex: none;
+  color: var(--tool-muted);
+}
+
+/* A label sits ABOVE its control, inside the same block — the field, its
+   name and its message are one object, and a row that wraps takes all three
+   with it. Two pixels, the same hang the message uses below. */
+.kit-field-block > .kit-label {
+  display: block;
+  padding-block-end: var(--dock-tab-underline);
+}

@@ -1,0 +1,20 @@
+/* Spinner — spine-publish export wheel.
+   Accent tip on a border ring; spins while work has no fraction to report.
+   Pair with a label beside it, or alone as a status light for busy probes. */
+
+.kit-spinner {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--tool-space-4);
+  height: var(--tool-space-4);
+  border: var(--dock-tab-underline) solid var(--tool-border);
+  border-block-start-color: var(--tool-accent);
+  border-radius: 50%;
+  animation: kit-spinner-spin 0.8s linear infinite;
+}
+
+@keyframes kit-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

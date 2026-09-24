@@ -1,0 +1,115 @@
+/* Icon and IconButton — frameless, drawn at 12px.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 2 · frameless icon button ───────────────────────────────────────── */
+.kit-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--tool-muted);
+  font-family: var(--tool-font);
+  /* The caption size, PINNED. `inherit` was right in the artifact, where
+	   every demo cell was caption-sized, and wrong the moment an icon sat in
+	   a body-size context: it drew 14px beside 12px controls. Every control
+	   in the kit is the same 12px caption (spec §Signed-off design), and an
+	   icon is a control. Found by the fidelity probe, 2026-09-05. */
+  font-size: var(--tool-font-size-body);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-icon:hover:not(:disabled),
+.kit-icon.is-hover {
+  color: var(--tool-text);
+}
+.kit-icon[data-tone='danger']:hover:not(:disabled),
+.kit-icon[data-tone='danger'].is-hover {
+  color: var(--tool-danger);
+}
+.kit-icon.on,
+.kit-icon[aria-pressed='true'] {
+  color: var(--tool-accent);
+}
+/* a glyph twisty rotates rather than swapping character — the dock's rule.
+   Rotate the glyph only: the button also wears `.kit-tip`, and a transform
+   on the tip host rotates the `::after` label with it. */
+.kit-icon[aria-expanded='false'] > .kit-glyph,
+.kit-icon[aria-expanded='false'] > svg {
+  transform: rotate(-90deg);
+}
+/* Drawn icons: 12px on the type's own grid, colour by inheritance, so an
+   icon is never a second palette. `stroke-width: 1` is a hairline at this
+   size — the same weight as every seam on the page. */
+.kit-icon svg,
+.kit-glyph svg {
+  display: block;
+  width: var(--tool-space-3);
+  height: var(--tool-space-3);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.kit-glyph {
+  display: inline-flex;
+  align-items: center;
+}
+/* one icon, two states: `aria-pressed` picks the form, so the toggle's
+   truth lives in the attribute a screen reader reads, not in a class */
+.kit-icon [data-when='on'] {
+  display: none;
+}
+.kit-icon[aria-pressed='true'] [data-when='on'] {
+  display: inline;
+}
+.kit-icon[aria-pressed='true'] [data-when='off'] {
+  display: none;
+}
+.kit-icon:disabled {
+  opacity: var(--tool-disabled-opacity);
+  cursor: default;
+}
+/* ── the unclamped variant ────────────────────────────────────────────
+   The TRACK's bounds are elastic: type past the max and the range grows to
+   fit rather than the value being cut down. What stays fixed is a pair of
+   hard limits — a typed value beyond them is set to them, so a fat finger
+   on the keyboard cannot ask for a 500,000× wincap.
+
+   The field is exactly as wide as its number and the track gives up that
+   width, so the control's own width never changes: the readout is
+   `flex: none` at its content, the track is `flex: 1 1 auto`, and widening
+   one shrinks the other for free. It follows the number both ways — a
+   field that only ratchets wider ends up sized for the longest thing ever
+   typed into it. That sizing is every slider's, not this variant's; it is
+   only here that a number gets long enough for it to be obvious. */
+/* A gesture, drawn and set inline so it sits in a hint column or in a
+   sentence: baseline-nudged rather than centred, because here it is type,
+   not a control.
+
+   ONE CELL, LIKE A CHARACTER. A hint is monospaced — that is the whole
+   reason a hint column lines up down a menu — so a gesture occupies
+   exactly one cell, drawn on an 8×12 viewBox that fills it. `⇧` + a mouse
+   is two cells and sets identically to `⌘W`. (At 2ch it was three cells
+   wide with slack inside, which is why the two hints spaced differently.)
+   The stroke is 1.1 user units because the drawing scales to 0.9, landing
+   it back on the same hairline as everything else. */
+.kit-mouse {
+  display: inline-block;
+  width: 1ch;
+  height: 1em;
+  vertical-align: -2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+}

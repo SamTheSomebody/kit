@@ -1,0 +1,121 @@
+/* Menu — rows, submenus, hints.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 16 · menu row ───────────────────────────────────────────────────
+   `.dock-menu`'s rules, lifted so a tool can raise a menu without a dock.
+   A menu IS an object — it floats over the work — so it wears the floating
+   surface recipe. If these ever diverge from dock.css it is a bug. */
+/* Padding tightened 2026-09-04 to the tree and table rows' own rhythm —
+   5px all round, a 5px gap, one row object across menu, tree and table.
+   The type is the same 12px caption as every other control; what read as
+   extra padding was the tick GUTTER, reserved on every row of every menu
+   whether anything was checked or not, putting labels 22px in from the
+   border. Now: an 8px column (the ✓ is 7.2px at this size), and no column
+   at all in a menu with nothing to tick — which is most context menus.
+   Rows within one menu still align, because the rule is per-menu.
+
+   THAT ROW OBJECT IS 16px AS OF 2026-09-07 ([HUMAN] Sam), not the 22px the
+   artifact signed: 2px of block padding rather than 5px, here and in the
+   tree and the table together, so the three stay one object. The 5px gap
+   and the inline padding are untouched — a menu row's gap holds the tick
+   column off the label and is not a height. */
+.kit-menu {
+	display: inline-flex;
+	flex-direction: column;
+	min-width: var(--dock-menu-min-w);
+	/* no vertical padding: the rows ARE the menu. A cushion top and bottom
+	   only made the box taller than its content and pulled the first row's
+	   hover ground away from the edge it belongs to. */
+	padding: 0;
+	border: var(--dock-divider) solid var(--surface-border);
+	border-radius: var(--surface-radius);
+	background: var(--surface-bg);
+	box-shadow: var(--surface-shadow-far);
+	font-size: var(--tool-font-size-body);
+}
+/* raised at a pointer rather than sat in a page — `.dock-menu`'s own
+   position and stacking */
+.kit-menu.floating {
+	position: fixed;
+	z-index: var(--dock-z-menu);
+}
+.kit-menu-item {
+	display: flex;
+	align-items: center;
+	gap: var(--dock-pad-tight);
+	width: 100%;
+	padding: calc(var(--tool-space-1) / 2) var(--dock-pad-tight);
+	background: none;
+	border: 0;
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: inherit;
+	line-height: 1;
+	text-align: left;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.kit-menu-item:hover:not(:disabled),
+.kit-menu-item.is-hover,
+.kit-menu-item.open,
+.kit-menu-item:focus-visible:not(:disabled) {
+	background: var(--tool-panel-hover);
+	outline: none;
+}
+.kit-menu-item:disabled {
+	color: var(--tool-muted);
+	opacity: var(--tool-disabled-opacity);
+	cursor: default;
+}
+/* the tick column is always reserved, so labels never shuffle sideways —
+   a menu that moves under the pointer is a menu you misclick */
+.kit-menu-tick {
+	flex: none;
+	width: var(--tool-space-2);
+	color: var(--tool-accent);
+}
+.kit-menu:not(:has(.kit-menu-item.on)) .kit-menu-tick {
+	display: none;
+}
+.kit-menu-caret {
+	margin-inline-start: auto;
+	padding-inline-start: var(--tool-space-3);
+	color: var(--tool-muted);
+}
+/* The accelerator column: a menu row is the only place in the kit that
+   teaches a keystroke, and the keystroke is muted because it is a label.
+
+   A key with no glyph in the face is spelled instead — `Enter`, not a
+   U+21B5 that would fall back to the OS font. Still a whole number of
+   cells, so the column still lines up.
+
+   A shortcut is a SEQUENCE, so it is marked up as one — a `kbd` per key,
+   the gesture as its own item — and spaced by exactly one cell. `⌘ W` and
+   `⇧` + a mouse are then both three cells and still line up with each
+   other down the column. Set as one string they read as a single squashed
+   token, which is what `⌘W` was. */
+.kit-menu-hint {
+	display: inline-flex;
+	align-items: center;
+	gap: 1ch;
+	margin-inline-start: auto;
+	padding-inline-start: var(--tool-space-3);
+	color: var(--tool-muted);
+	white-space: nowrap;
+}
+.kit-menu-hint kbd {
+	font: inherit;
+	color: inherit;
+}
+.kit-menu-rule {
+	/* flush: no vertical padding anywhere in a menu, dividers included. The
+	   rule separates two rows; the space around it was separating it from
+	   the rows it belongs to. */
+	margin: 0;
+	border-block-start: var(--dock-divider) solid var(--tool-border);
+}

@@ -1,0 +1,66 @@
+/* Thumb — one plate cell: a square on a ground, the image filling it, a
+   caption under it.
+   Promoted 2026-09-05 from the two art-curate views ([HUMAN] Sam: "promote
+   the cell only"). The CELL is what they share; the surroundings are not —
+   one is a drag source in a drop tray, the other a button in a card with
+   badges — so this draws the box and nothing else. The caller owns the
+   element around it, its interactions and its focus.
+
+   Squared, like everything else in the kit (radius left with Card). Both
+   views had their own radius before. */
+
+.kit-thumb {
+  --thumb-size: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dock-pad-tight);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.kit-thumb-plate {
+  flex: none;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  overflow: hidden;
+  /* the ground is the caller's: a plate sits on its matte, and what that
+	   matte is belongs to the pipeline that produced it, not to the kit */
+  background: var(--thumb-ground, var(--tool-panel));
+  transition: outline-color var(--tool-duration-fast) var(--tool-ease-out);
+  outline: var(--dock-tab-underline) solid transparent;
+  outline-offset: var(--dock-divider);
+}
+
+.kit-thumb-plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The hover mark is the host's, so a cell inside a button lights up and a
+   cell rendered as a readout does not. */
+:hover > .kit-thumb > .kit-thumb-plate,
+.kit-thumb.is-hover > .kit-thumb-plate {
+  outline-color: var(--tool-accent);
+}
+
+.kit-thumb-caption {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tool-muted);
+  font-size: var(--tool-font-size-body);
+  line-height: 1;
+}
+
+/* Faded, not hidden: an excluded plate stays visible so the operator can
+   see what was ruled out, and un-rule it. */
+.kit-thumb.faded .kit-thumb-plate {
+  opacity: 0.35;
+}
+
+.kit-thumb.faded .kit-thumb-caption {
+  opacity: 0.6;
+}

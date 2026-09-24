@@ -1,0 +1,48 @@
+/* Progress — the slider's track with the knob removed.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 23 · progress ───────────────────────────────────────────────────
+   The slider's own track, knob removed: same hairline weight, same accent
+   fill, same `--fill` variable. Determinate reads left to right;
+   indeterminate sweeps a third of the track, because work with no total
+   still has to look like work. The sweep is a CSS animation and the
+   reduced-motion block at the end of tokens.css stops it dead, which is
+   why the track keeps a visible accent stub when it does. */
+.kit-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--dock-pad);
+  min-width: 0;
+  width: 100%;
+  font-size: var(--tool-font-size-body);
+}
+.kit-progress-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--dock-tab-underline);
+  background: var(--tool-border);
+  overflow: hidden;
+}
+.kit-progress-track::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: calc(var(--fill, 0) * 1%);
+  background: var(--tool-accent);
+}
+.kit-progress[data-indeterminate] .kit-progress-track::before {
+  width: 34%;
+  animation: kit-sweep var(--tool-duration-sweep) var(--tool-ease-out) infinite;
+}
+.kit-progress-value {
+  flex: none;
+  color: var(--tool-muted);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,150 @@
+/* Table — the row object again, with a sortable head.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 18 · table row ──────────────────────────────────────────────────
+   Same primitive as the tree row (its selector lists above carry hover,
+   selection and disabled for both). A table adds a muted head and a
+   figures column. No zebra — a hairline already says where a row ends.
+
+   THE ROW IS 16px, not the 22px the artifact signed ([HUMAN] Sam
+   2026-09-07). The tree row went first and the design says the menu row is
+   the tree row is the table row, so all three went: 2px of block padding
+   instead of 5px, which is the whole of it. The INLINE padding and the
+   column gap are the other axis entirely — the gap is horizontal, so it is
+   the column rhythm and has nothing to do with a row's height.
+
+   THE COLUMN RHYTHM WIDENS TO 12px ([HUMAN] Sam 2026-09-09), from the 7px
+   `--dock-pad` the artifact signed, and the inline padding to `--dock-pad`
+   from `--dock-pad-tight`. A wide table is where the two-column artifact
+   stopped describing the object: at six columns and 7px, `Node` `Residual`
+   `Offset` `Size delta` `Matched by` `Also differs` read as one run of text
+   with nothing between a value and the next heading's column, and every cell
+   ellipsises before the gap ever gives way. The ROW HEIGHT IS UNTOUCHED —
+   this is the horizontal axis, which is what was asked for and what the
+   density rule above is not about. `--kit-table-gap` so a table that wants
+   the old rhythm back can say so without forking the rule. */
+/* ONE GRID FOR THE WHOLE TABLE, and the rows are subgrids of it.
+   `.kit-table` was a flex column of rows that each declared the SAME track
+   list, which is not the same thing as sharing one: a `max-content` track
+   is sized from the cells IN THAT GRID, so the head sized its columns from
+   the headings and every body row sized its own from its own figures, and
+   nothing lined up between them. It survived review because the artifact's
+   table has ONE `max-content` column and it is the LAST one — the flexible
+   column silently absorbed the difference and both rows still ended flush
+   at the right edge. Add a second figures column and the head is 22px out
+   ([HUMAN] Sam, 2026-09-07, on a five-column table).
+
+   `subgrid` is the fix that keeps the row a real box: the tracks are the
+   TABLE'S and every row borrows them, so a cell in the head and a cell in
+   a record are the same column by construction — while the row keeps its
+   own background, its hover, its selection bar and the rule above it,
+   which `display: contents` would have thrown away. */
+.kit-table {
+	display: grid;
+	grid-template-columns: var(--kit-table-columns);
+	column-gap: var(--kit-table-gap);
+	width: 100%;
+	min-width: 0;
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+	/* THE TRACK LIST IS THE TABLE'S, NOT THE ROW'S, and it is a variable so
+	   the component can state it from the columns it was actually given.
+	   Hardcoded here it was `1fr max-content` — right for the two-column
+	   table the artifact draws and silently wrong for any other: grid
+	   auto-places the surplus cells into IMPLICIT ROWS, so a six-column
+	   table rendered as three stacked lines per record with the headings
+	   interleaved. Found in compare's node diff, 2026-09-06, where it made
+	   the whole pane unreadable. The default below is the artifact's, so a
+	   two-column table is unchanged. */
+	--kit-table-columns: minmax(0, 1fr) max-content;
+	--kit-table-gap: 12px;
+}
+.kit-table-row {
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: subgrid;
+	align-items: center;
+	gap: var(--kit-table-gap);
+	padding: calc(var(--tool-space-1) / 2) var(--dock-pad);
+	border-block-start: var(--dock-divider) solid var(--tool-border);
+	border-inline-start: var(--dock-tab-underline) solid transparent;
+	color: var(--tool-text);
+	transition: background-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-table-head {
+	border-block-start: 0;
+	border-block-end: var(--dock-divider) solid var(--tool-border);
+	color: var(--tool-muted);
+}
+.kit-table-head:hover {
+	background: none;
+}
+/* EVERY cell clips, not only the first. With the rule on `:first-child` the
+   one flexible column behaved and any other long value pushed the grid past
+   the pane, which put a horizontal scrollbar under a table that had a perfectly
+   good column to give. A cell that cannot fit says so with an ellipsis and
+   keeps its `title`. */
+.kit-table-row > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.kit-table-num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+/* ── 24 · sortable table head ────────────────────────────────────────
+   The head cell becomes a button and the caret is the tree twisty's own
+   glyph, rotated by `aria-sort` rather than swapped. An unsorted column
+   shows its caret only under the pointer — three carets at rest would
+   claim three sorts. */
+.kit-table-sort {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--dock-pad-tight);
+	padding: 0;
+	background: none;
+	border: 0;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+.kit-table-sort i {
+	font-style: normal;
+	color: var(--tool-muted);
+	opacity: 0;
+	transition:
+		opacity var(--tool-duration-fast) var(--tool-ease-out),
+		transform var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-table-sort:hover i,
+.kit-table-sort.is-hover i {
+	opacity: 1;
+}
+.kit-table-sort[aria-sort] {
+	color: var(--tool-text);
+}
+.kit-table-sort[aria-sort] i {
+	opacity: 1;
+	color: var(--tool-accent);
+}
+.kit-table-sort[aria-sort="ascending"] i {
+	transform: rotate(180deg);
+}
+/* A FIGURES COLUMN PUTS THE CARET ON THE FAR SIDE OF ITS LABEL. The caret
+   holds its width whether or not it is shown — the column must not shuffle
+   under the pointer — and on a right-aligned column that reserved space sat
+   between the label and the column's edge, so `RTP` ended 12px short of the
+   figures underneath it (measured in the gallery, 2026-09-07: label right
+   1049.8, values right 1062). `text-align: right` could not fix it: the
+   head cell is a FLEX container, and text-align does not place flex items.
+   Reversing the direction does, and it is the honest reading anyway — the
+   label is what lines up with the numbers, so the label takes the edge. */
+.kit-table-sort.kit-table-num {
+	flex-direction: row-reverse;
+}

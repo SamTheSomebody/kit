@@ -1,0 +1,26 @@
+{
+  "note": "Properties layout.css may use. Drift vs layout.css fails verify.",
+  "properties": ["display", "flex", "flex-direction", "flex-wrap", "align-items", "grid-template-columns", "gap", "row-gap", "column-gap", "min-width", "min-height", "width", "height", "overflow", "padding", "padding-inline-end", "margin", "box-sizing", "color"],
+  "valuePatterns": {
+    "display": "^(flex|grid|contents|none)$",
+    "flex": "^(0 0 auto|1 1 0|1 1 12ch|[0-9]+ [0-9]+ 0)$",
+    "flex-direction": "^(row|column)$",
+    "flex-wrap": "^(wrap|nowrap)$",
+    "align-items": "^(flex-start|start|center|stretch)$",
+    "grid-template-columns": "^(max-content minmax\\(0, 1fr\\)|minmax\\(0, 1fr\\)( minmax\\(0, 1fr\\))*)$",
+    "gap": "^(0|var\\(--dock-pad\\))$",
+    "row-gap": "^(0|var\\(--dock-pad\\))$",
+    "column-gap": "^(0|var\\(--dock-pad\\))$",
+    "min-width": "^(0|auto)$",
+    "min-height": "^(0|auto)$",
+    "width": "^(auto|0|100%|[1-9][0-9]?%)$",
+    "height": "^(auto|0|100%|[1-9][0-9]?%)$",
+    "overflow": "^(auto|hidden|visible)$",
+    "padding": "^(0|var\\(--dock-pad\\))$",
+    "padding-inline-end": "^(0|var\\(--dock-pad\\))$",
+    "margin": "^0$",
+    "box-sizing": "^border-box$",
+    "color": "^var\\(--tool-muted\\)$"
+  },
+  "banned": ["align-self", "justify-self", "place-self", "place-items", "position", "top", "right", "bottom", "left", "inset", "z-index", "float", "clear", "transform", "filter", "opacity", "background", "border", "border-radius", "box-shadow", "outline", "font", "line-height", "letter-spacing", "text-align", "vertical-align", "animation", "transition"]
+}

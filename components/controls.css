@@ -1,0 +1,219 @@
+/* Shared recipes — the layer every control reads and none of them owns.
+   The test for a rule belonging here is that MORE THAN ONE control spends
+   it. Anything one control owns lives in that control's own file.
+   Spec: docs/specs/2026-09-04-control-kit-design.md §Layers. */
+
+/* ── the floating surface, one recipe for every control that leaves the
+      page: tooltip, menu, notification, dialog ─────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   FLOATING SURFACES — one recipe, LOCKED 2026-09-04 as "squared"
+   Anything that leaves the page and hovers over the work — tooltip, menu,
+   notification, floating window — is the same object and wears the same
+   four variables. Locked to the stage ground, a hairline, NO radius, and
+   the shadows doing the lifting.
+
+   Two alternatives were drawn and cut: the panel ground at --tool-radius
+   (which is what ships today) and this same recipe with no shadow at all.
+   Squared retires the last radius in the kit — every control had already
+   given its corners up, and a shadow says "this floats" better than a
+   curve does. It is a change to the signed dock: `.dock-menu` squares off.
+
+   Elevation is the ONLY thing allowed to vary between these surfaces, and
+   it is spent through the two shadow tokens that already exist for it:
+   `near` for something transient resting just above the work, `far` for
+   something you point at and click.
+
+   The bug that produced the border rule: --tool-panel-hover and
+   --tool-border are the SAME HEX, so a ground named one under a border
+   named the other is an invisible edge. Never pick both by name.
+
+   WHY `.dock-stage` IS ON THE SELECTOR. These five are ALIASES, and a
+   custom property is substituted where it is DECLARED, not where it is
+   read: declared only at `:root`, they resolve against the `--tool-*` a
+   TOOL puts there. A game's dev dock writes the palette on its STAGE
+   instead (`tools/editor/host` — a game may not import the
+   tools' tokens.css), so at `:root` there is no `--tool-bg`, every alias
+   is invalid at computed-value time, and it inherits down as nothing:
+   right-clicking a game raised a context menu with no ground, no shadow
+   and a currentColor border. Declaring the same block on the stage makes
+   the aliases resolve against the stage's own palette. Any host that
+   scopes `--tool-*` to a subtree rather than the document needs this
+   block too.
+   ══════════════════════════════════════════════════════════════════ */
+:root,
+.dock-stage {
+	--surface-bg: var(--tool-bg);
+	--surface-border: var(--tool-border);
+	--surface-radius: 0;
+	--surface-shadow-near: var(--tool-shadow-1);
+	--surface-shadow-far: var(--tool-shadow-2);
+}
+
+/* ── the control row ──────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   CONTROL ROWS — one gap, and ORDER does the grouping
+   A row has ONE spacing, --dock-pad (7px), between everything in it:
+   control to control, cluster to cluster. Two attempts at making space
+   carry the grouping were cut — a hairline between clusters, then a 16px
+   step between them — because both said what order and a caption already
+   say, and a row with three different gaps in it reads as a row somebody
+   has been fiddling with.
+
+   The only tighter gap left in a row is INSIDE one control:
+   --dock-pad-tight (5px) between butted segment keys, bridged by the
+   seam. That is a gap meant to read as "not a gap".
+
+   Which puts the whole weight of grouping on the ordering rules and on
+   `.captioned`. They are not decoration now, they are the mechanism.
+   ══════════════════════════════════════════════════════════════════ */
+/* ONE class. There were two — a bar and a group inside it — and once the
+   cluster gap and the cluster seam were both cut they were the same rule
+   twice, the group keeping only a `position: relative` that had anchored
+   the seam's pseudo. So a CLUSTER IS A BAR INSIDE A BAR: same class, same
+   gap, and the nesting is the only thing that says which is which. */
+.kit-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--dock-pad);
+	min-width: 0;
+}
+/* `hidden` HAS TO HIDE. `display: flex` above beats the UA sheet's
+   `[hidden] { display: none }` — specificity, not cascade order — so a
+   consumer that swaps two rows by setting `row.hidden` draws both of them
+   and nothing says why. The tree already carries this rule for its own
+   children (`tree.css`); a row is the other place a consumer hides.
+   Measured 2026-09-09: the viewport panel's shape keys and its custom boxes
+   were on screen at the same time, each believing the other was away. */
+.kit-bar[hidden] {
+	display: none;
+}
+
+/* Captioned — for a cluster that needs naming rather than only spacing.
+   The caption sits over its own controls at the tight pad; the controls
+   themselves are one more nested bar. */
+.kit-bar.captioned {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--dock-pad-tight);
+}
+
+/* ── gesture modifiers a control sets on <body> for the duration ──── */
+/* a swipe across the eyes must not select the labels it crosses */
+body.painting,
+body.painting * {
+	user-select: none;
+	-webkit-user-select: none;
+}
+body.reordering,
+body.reordering * {
+	cursor: grabbing !important;
+	user-select: none;
+	-webkit-user-select: none;
+}
+/* a numeric drag leaves its own control almost immediately — the cursor and
+   the no-select have to belong to the page for the length of the gesture, or
+   the drag paints a selection across whatever it crosses (`scrub.ts`) */
+body.scrubbing,
+body.scrubbing * {
+	cursor: ew-resize !important;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* ── the scrub handle ─────────────────────────────────────────────────
+   Not a control of its own: a MARK on one that already exists, saying its
+   number answers to a sideways drag. A field's box wears it, and so does a
+   label acting as the field's handle. */
+.kit-scrub {
+	cursor: ew-resize;
+}
+
+/* ── a scrollport, drawn the way the dock draws its own ───────────────
+   `.dock-content` has had the slim bar since the dock shipped, but the rule
+   reaches only that element's own scrollbar — a panel that scrolls INSIDE a
+   pane got the platform's default, which on this platform is a fat pale bar
+   nothing else in the estate looks like. Same two colours here, and BOTH
+   AXES: `width` alone leaves a horizontal bar at its default height, which
+   is the mismatch this class exists to end. */
+/* `.kit-pane` joins by name rather than by wearing the class: the recipe
+   declares `overflow: auto`, so a pane deep enough that nothing above it
+   took the scrolling IS one of these, and every tool would otherwise have to
+   remember to say so. */
+.kit-scrollport,
+.kit-pane {
+	min-width: 0;
+	min-height: 0;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--tool-border) 55%, transparent) transparent;
+}
+.kit-scrollport:hover,
+.kit-pane:hover {
+	scrollbar-color: var(--tool-border) transparent;
+}
+.kit-scrollport::-webkit-scrollbar,
+.kit-pane::-webkit-scrollbar {
+	width: var(--tool-space-1);
+	height: var(--tool-space-1);
+}
+.kit-scrollport::-webkit-scrollbar-thumb,
+.kit-pane::-webkit-scrollbar-thumb {
+	background: color-mix(in srgb, var(--tool-border) 55%, transparent);
+}
+.kit-scrollport:hover::-webkit-scrollbar-thumb,
+.kit-pane:hover::-webkit-scrollbar-thumb {
+	background: var(--tool-border);
+}
+.kit-scrollport::-webkit-scrollbar-corner,
+.kit-pane::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+/* ── status light (dock tab · busy button · notification) ───────────
+   One device for severity / busy. Lives in the control layer so a Button
+   `busy` paints without mounting a dock. Tokens default on :root; a stage
+   may still override via applyDockTheme. */
+.dock-tab-dot {
+	flex: none;
+	width: var(--dock-tab-dot);
+	height: var(--dock-tab-dot);
+	border-radius: 50%;
+	background: var(--tool-muted);
+}
+
+.dock-tab-dot[data-status="busy"] {
+	background: var(--tool-accent);
+	animation: dock-tab-pulse var(--dock-tab-dot-pulse) ease-in-out infinite;
+}
+
+.dock-tab-dot[data-status="ok"] {
+	background: var(--tool-success);
+}
+
+.dock-tab-dot[data-status="warn"] {
+	background: var(--tool-highlight);
+}
+
+.dock-tab-dot[data-status="danger"] {
+	background: var(--tool-danger);
+}
+
+/* ── the two animations more than one control runs ────────────────── */
+@keyframes dock-tab-pulse {
+	50% {
+		opacity: 0.35;
+	}
+}
+@keyframes kit-drain {
+	to {
+		transform: scaleX(0);
+	}
+}
+@keyframes kit-sweep {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(300%);
+	}
+}

@@ -1,0 +1,63 @@
+/* Section — a named line break.
+   Promoted 2026-09-05 ([HUMAN] Sam: "none of the tools should have the card
+   styles… some can be promoted to tabs and some can be a simple line break.
+   The goal is to minimise the padding and further align the styles").
+
+   A card was a box: a border on four sides, a radius, and padding inside it,
+   repeated down a pane so that reading three groups meant crossing six edges
+   and four paddings. A section is the same grouping with one hairline and no
+   box at all — the SAME device the kit already uses for a field, where a rule
+   under a line of type is the whole control, and for the message that hangs
+   off it. Nothing is enclosed; things are separated.
+
+   Title row is break **A** (locked 2026-09-23): `[caption] ———` on one
+   line (text + flex hairline), both `--tool-text`. No title = the rule
+   alone. Prior sibling → air only, no extra hairline between sections.
+
+   No padding of its own, either. A `Pane` pads once, at the edge, and
+   everything inside it is spaced by the one gap. */
+
+.kit-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dock-pad-tight);
+  min-width: 0;
+}
+
+/* Prior sibling in the same container → air above (not when first). */
+* + .kit-section {
+  margin-block-start: var(--dock-pad);
+}
+
+.kit-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--dock-pad);
+  min-width: 0;
+  color: var(--tool-text);
+  font-size: var(--tool-font-size-body);
+  line-height: 1;
+}
+
+.kit-section-title::after {
+  content: '';
+  flex: 1 1 0;
+  min-width: var(--tool-space-4);
+  height: 0;
+  border-block-end: var(--dock-divider) solid currentColor;
+}
+
+/* Untitled: the rule alone — a line break that says nothing more. */
+.kit-section.bare::before {
+  content: '';
+  display: block;
+  height: 0;
+  border-block-end: var(--dock-divider) solid var(--tool-text);
+}
+
+.kit-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dock-pad);
+  min-width: 0;
+}

@@ -1,0 +1,162 @@
+/* Palette: https://github.com/dracula/ghostty/blob/main/dracula */
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/JetBrainsMono-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --tool-bg: #282a36;
+  --tool-panel: #21222c;
+  --tool-panel-hover: #44475a;
+  --tool-accent: #bd93f9;
+  --tool-accent-hover: #d6acff;
+  --tool-highlight: #f1fa8c;
+  --tool-text: #f8f8f2;
+  --tool-muted: #6272a4;
+  --tool-danger: #ff5555;
+  --tool-success: #50fa7b;
+  --tool-border: #44475a;
+  --tool-cyan: #8be9fd;
+  --tool-orange: #ffb86c;
+  --tool-pink: #ff79c6;
+  /* The bright half of the ANSI ramp, from the same dracula/ghostty freeze.
+	   Two of the eight brights were already here under the names the tools
+	   use them by — `--tool-muted` IS bright black and `--tool-accent-hover`
+	   IS bright blue — so only six were missing, and the console needs all
+	   sixteen to render a terminal faithfully. They were derived by a
+	   `color-mix` toward white at first; that reproduced Dracula's values
+	   closely but resolved to `color(srgb …)`, which xterm's colour parser
+	   does not accept, and six slots silently fell back to its defaults. */
+  --tool-danger-bright: #ff6e6e;
+  --tool-success-bright: #69ff94;
+  --tool-highlight-bright: #ffffa5;
+  --tool-pink-bright: #ff92df;
+  --tool-cyan-bright: #a4ffff;
+  --tool-text-bright: #ffffff;
+  --tool-font: 'JetBrains Mono', ui-monospace, monospace;
+  --tool-space-1: 4px;
+  --tool-space-2: 8px;
+  --tool-space-3: 12px;
+  --tool-space-4: 16px;
+  --tool-font-size-body: 12px;
+  --tool-font-size-title: 18px;
+  --tool-duration-press: 90ms;
+  --tool-duration-fast: 150ms;
+  --tool-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* ── the dock knobs the CONTROLS spend ─────────────────────────────
+	   `applyDockTheme` writes every `--dock-*` onto a `.dock-stage`, which
+	   is right for the dock and wrong for a control: a field in a tool that
+	   has not mounted a dock would have no rule under it, and a key no hard
+	   edge — `box-shadow: 0 var(--dock-tab-underline) 0` with the variable
+	   unset is an invalid declaration the browser drops silently. That is
+	   how it presented: the gallery rendered with no key edge and no field
+	   rule and nothing errored.
+
+	   So the ten the kit uses have root defaults here. A stage still
+	   overrides them locally, so a dock is unaffected. The values are
+	   duplicated from `DOCK_THEME`, and `dock/tests/tokens.test.ts` fails if
+	   the two ever disagree — the same shape as the palette freeze, because
+	   a silent double-source is exactly what theme.ts warns about. */
+  --dock-divider: 1px;
+  --dock-pad: 7px;
+  --dock-pad-tight: 5px;
+  --dock-tab-underline: 2px;
+  --dock-tab-tracking: 0;
+  --dock-drag-opacity: 0.35;
+  --dock-menu-min-w: 180px;
+  --dock-z-menu: 90;
+  --dock-tab-dot: 8px;
+  --dock-tab-dot-pulse: 1200ms;
+
+  /* The control kit's five (docs/specs/2026-09-04-control-kit-design.md).
+	   Each is a value more than one control spends, which is the whole test
+	   for whether something belongs here rather than in a rule. */
+  --tool-disabled-opacity: 0.55;
+  /* the delay before a hover explains itself */
+  --tool-tip-delay: 400ms;
+  /* the indeterminate sweep. Far longer than any state change, because it
+	   is not one — it says "still working", and at half this it read as
+	   hurrying. */
+  --tool-duration-sweep: 2800ms;
+  /* how close the pointer gets before the scroll rail thickens — a
+	   distance, so it belongs here and not in the script that reads it */
+  --tool-scroll-reach: 48px;
+  /* how long a notification stays. Long enough to read a sentence twice,
+	   short enough that a stack of them clears itself. */
+  --tool-note-dwell: 6000ms;
+  /* Elevation. Black-alpha rather than a palette colour: a shadow darkens
+	   whatever is under it, so it cannot be one of the eleven. This file is
+	   the only one allowed to spell them — `checkToolUi` rejects hex/rgb(a)
+	   anywhere else, so a consumer that wants a shadow must use these. */
+  --tool-shadow-1: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --tool-shadow-2: 0 12px 36px rgba(0, 0, 0, 0.55);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--tool-bg);
+  color: var(--tool-text);
+  font-family: var(--tool-font);
+  font-size: var(--tool-font-size-body);
+}
+
+/* Base resets every tool inherits instead of re-declaring them. Promoted
+   from the dock-kit design artifact, 2026-09-03 (spec §Base-class
+   promotions 3): a button that does not inherit the tool font and colour
+   reads as browser chrome, and the selection/focus colours are part of the
+   palette, not per-tool decisions. */
+button {
+  font-family: var(--tool-font);
+  color: var(--tool-text);
+}
+
+::selection {
+  background: var(--tool-accent);
+  color: var(--tool-panel);
+}
+
+:focus-visible {
+  outline: 2px solid var(--tool-accent);
+  outline-offset: 1px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--tool-muted);
+  font-family: var(--tool-font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

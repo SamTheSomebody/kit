@@ -1,0 +1,53 @@
+/* Tooltip.
+   Ported 1:1 from the signed artifact
+   (`tools/ui/fidelity/reference.html`, spec 2026-09-04-control-kit-design).
+   Global by design: the class contract IS the contract the fidelity hash
+   checks, and a scoped rule cannot reach a child component's root. The
+   isolation that matters is per FILE — an edit here cannot reach another
+   control, which is exactly what the one-file artifact could not promise. */
+
+/* ── 17 · tooltip ────────────────────────────────────────────────────
+   The drawn answer to the native `title`. Content is `data-tip`, so a
+   tooltip is an attribute on a control rather than a component to mount.
+   Same floating recipe as the menu, one step nearer the work. */
+.kit-tip {
+	position: relative;
+}
+.kit-tip::after {
+	content: attr(data-tip);
+	position: absolute;
+	bottom: calc(100% + var(--dock-pad-tight));
+	left: 0;
+	z-index: 1;
+	width: max-content;
+	max-width: 28ch;
+	padding: var(--dock-pad-tight) var(--dock-pad);
+	border: var(--dock-divider) solid var(--surface-border);
+	border-radius: var(--surface-radius);
+	background: var(--surface-bg);
+	box-shadow: var(--surface-shadow-near);
+	color: var(--tool-text);
+	font-size: var(--tool-font-size-body);
+	font-weight: 400;
+	line-height: 1.4;
+	white-space: normal;
+	text-align: left;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--tool-duration-fast) var(--tool-ease-out) var(--tool-tip-delay);
+}
+.kit-tip:hover::after,
+.kit-tip:focus-visible::after,
+.kit-tip.is-hover::after {
+	opacity: 1;
+}
+/* a forced demo and a keyboard focus both show at once — the dwell is for
+   a pointer crossing the control, nothing else */
+.kit-tip.is-hover::after,
+.kit-tip:focus-visible::after {
+	transition-delay: 0ms;
+}
+.kit-tip.below::after {
+	top: calc(100% + var(--dock-pad-tight));
+	bottom: auto;
+}
