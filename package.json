@@ -1,6 +1,6 @@
 {
   "name": "@samthesomebody/kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tool chrome layout recipes + Svelte controls. Dock optional (not in this package yet).",
   "type": "module",
   "license": "MIT",
@@ -10,6 +10,7 @@
   },
   "exports": {
     ".": "./index.ts",
+    "./package.json": "./package.json",
     "./layout.css": "./layout.css",
     "./tokens.css": "./tokens.css",
     "./column.svelte": "./column.svelte",
@@ -20,7 +21,8 @@
     "./components": "./components/index.ts",
     "./components/index.css": "./components/index.css",
     "./components/*.css": "./components/*.css",
-    "./components/*.svelte": "./components/*.svelte"
+    "./components/*.svelte": "./components/*.svelte",
+    "./components/*.ts": "./components/*.ts"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
