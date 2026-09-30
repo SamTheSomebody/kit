@@ -27,12 +27,21 @@ Svelte wrapper:
 </script>
 ```
 
+## Layout persistence
+
+Three-tier store (factory / default / current), shared by every dock tool:
+
+```ts
+import { createDockLayoutStore, dockLayoutJson, usableLayout } from '@samthesomebody/dock';
+import type { DockLayoutStore, DockLayoutTabs } from '@samthesomebody/dock';
+```
+
 ## Layers
 
-| Package | Layer |
-| ------- | ----- |
-| `@samthesomebody/kit` | layout + components |
-| `@samthesomebody/dock` | shell (optional) |
+| Package                | Layer                              |
+| ---------------------- | ---------------------------------- |
+| `@samthesomebody/kit`  | layout + components + `./terminal` |
+| `@samthesomebody/dock` | shell (optional)                   |
 
 ## License
 

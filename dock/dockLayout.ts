@@ -15,7 +15,7 @@
  * consumer half of that seam — and it is identical in every tool, which is
  * why it lives here rather than in each one.
  */
-import type { DockMenuItem } from "./index.ts";
+import type { DockMenuItem } from './types';
 
 /**
  * Where the DEFAULT and CURRENT tiers are kept. `localStorage` is the default
@@ -29,37 +29,34 @@ import type { DockMenuItem } from "./index.ts";
  * not a hard-coded `localStorage` — the compare workbench hands one that
  * keeps the two tiers on its host instead (2026-09-07).
  */
-type DockLayoutStorage = {
-	read: (key: string) => string | undefined;
-	write: (key: string, value: string | null) => void;
-};
+type DockLayoutStorage = { read: (key: string) => string | undefined; write: (key: string, value: string | null) => void };
 
 const browserStorage: DockLayoutStorage = {
-	read: (key) => {
-		if (typeof localStorage === "undefined") {
-			return undefined;
-		}
-		try {
-			return localStorage.getItem(key) ?? undefined;
-		} catch {
-			/* private mode, blocked site data: no stored layout is a fine answer */
-			return undefined;
-		}
-	},
-	write: (key, value) => {
-		if (typeof localStorage === "undefined") {
-			return;
-		}
-		try {
-			if (value === null) {
-				localStorage.removeItem(key);
-			} else {
-				localStorage.setItem(key, value);
-			}
-		} catch {
-			/* storage full or blocked — the layout is a convenience, not state to guard */
-		}
-	},
+  read: key => {
+    if (typeof localStorage === 'undefined') {
+      return undefined;
+    }
+    try {
+      return localStorage.getItem(key) ?? undefined;
+    } catch {
+      /* private mode, blocked site data: no stored layout is a fine answer */
+      return undefined;
+    }
+  },
+  write: (key, value) => {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      if (value === null) {
+        localStorage.removeItem(key);
+      } else {
+        localStorage.setItem(key, value);
+      }
+    } catch {
+      /* storage full or blocked — the layout is a convenience, not state to guard */
+    }
+  },
 };
 
 /** Tab lists a factory layout names as `"@name"` and the app supplies. */
@@ -71,43 +68,35 @@ export type DockLayoutTabs = Record<string, readonly string[]>;
  * types as `boolean`), and a `tabs` entry may still be a `"@name"`
  * placeholder. Only the fields the fill walks are named.
  */
-type LayoutDocumentNode = {
-	tabs?: string[];
-	active?: string | null;
-	a?: LayoutDocumentNode;
-	b?: LayoutDocumentNode;
-};
+type LayoutDocumentNode = { tabs?: string[]; active?: string | null; a?: LayoutDocumentNode; b?: LayoutDocumentNode };
 
-type LayoutDocument = {
-	layout?: LayoutDocumentNode | null;
-	floating?: { root?: LayoutDocumentNode }[];
-};
+type LayoutDocument = { layout?: LayoutDocumentNode | null; floating?: { root?: LayoutDocumentNode }[] };
 
-const PLACEHOLDER = "@";
+const PLACEHOLDER = '@';
 
 const listFor = (name: string, tabs: DockLayoutTabs): readonly string[] => {
-	const list = tabs[name.slice(PLACEHOLDER.length)];
-	if (list !== undefined) {
-		return list;
-	}
-	const known = Object.keys(tabs).join(", ");
-	throw new Error(`factory layout names "${name}", which no tab list was given for (given: ${known || "none"})`);
+  const list = tabs[name.slice(PLACEHOLDER.length)];
+  if (list !== undefined) {
+    return list;
+  }
+  const known = Object.keys(tabs).join(', ');
+  throw new Error(`factory layout names "${name}", which no tab list was given for (given: ${known || 'none'})`);
 };
 
 const fill = (node: LayoutDocumentNode, tabs: DockLayoutTabs): void => {
-	if (node.a) {
-		fill(node.a, tabs);
-	}
-	if (node.b) {
-		fill(node.b, tabs);
-	}
-	if (node.tabs === undefined) {
-		return;
-	}
-	node.tabs = node.tabs.flatMap((tab) => (tab.startsWith(PLACEHOLDER) ? [...listFor(tab, tabs)] : [tab]));
-	if (typeof node.active === "string" && node.active.startsWith(PLACEHOLDER)) {
-		node.active = listFor(node.active, tabs)[0] ?? null;
-	}
+  if (node.a) {
+    fill(node.a, tabs);
+  }
+  if (node.b) {
+    fill(node.b, tabs);
+  }
+  if (node.tabs === undefined) {
+    return;
+  }
+  node.tabs = node.tabs.flatMap(tab => (tab.startsWith(PLACEHOLDER) ? [...listFor(tab, tabs)] : [tab]));
+  if (typeof node.active === 'string' && node.active.startsWith(PLACEHOLDER)) {
+    node.active = listFor(node.active, tabs)[0] ?? null;
+  }
 };
 
 /**
@@ -116,14 +105,14 @@ const fill = (node: LayoutDocumentNode, tabs: DockLayoutTabs): void => {
  * the hard way in the lobby, 2026-09-03.
  */
 export const usableLayout = (json: string | undefined): string | undefined => {
-	if (json === undefined) {
-		return undefined;
-	}
-	try {
-		return JSON.stringify(JSON.parse(json)).includes('"leaf":true') ? json : undefined;
-	} catch {
-		return undefined;
-	}
+  if (json === undefined) {
+    return undefined;
+  }
+  try {
+    return JSON.stringify(JSON.parse(json)).includes('"leaf":true') ? json : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 /**
@@ -151,96 +140,89 @@ export const usableLayout = (json: string | undefined): string | undefined => {
  * pane rather than as the typo it is.
  */
 export const dockLayoutJson = (document: unknown, tabs: DockLayoutTabs = {}): string => {
-	/* Through JSON and back: the document is a module object shared by every
+  /* Through JSON and back: the document is a module object shared by every
 	   call (an import is evaluated once), and filling placeholders writes to
 	   it. Cloning also proves it is serializable before the dock sees it. */
-	const seed = JSON.parse(JSON.stringify(document)) as LayoutDocument;
-	if (seed.layout) {
-		fill(seed.layout, tabs);
-	}
-	for (const float of seed.floating ?? []) {
-		if (float.root) {
-			fill(float.root, tabs);
-		}
-	}
-	const json = JSON.stringify(seed);
-	if (usableLayout(json) === undefined) {
-		throw new Error("factory layout has no panes in it — a dock cannot hydrate a tree with no leaf");
-	}
-	return json;
+  const seed = JSON.parse(JSON.stringify(document)) as LayoutDocument;
+  if (seed.layout) {
+    fill(seed.layout, tabs);
+  }
+  for (const float of seed.floating ?? []) {
+    if (float.root) {
+      fill(float.root, tabs);
+    }
+  }
+  const json = JSON.stringify(seed);
+  if (usableLayout(json) === undefined) {
+    throw new Error('factory layout has no panes in it — a dock cannot hydrate a tree with no leaf');
+  }
+  return json;
 };
 
 export type DockLayoutStore = {
-	/** What to hydrate on mount: current, else the saved default, else factory. */
-	starting(): string;
-	/** Record the live layout — wire to the dock's `change` event. */
-	remember(json: string): void;
-	/** The `Layout/…` rows for the dock's context menu. */
-	menu(): DockMenuItem[];
+  /** What to hydrate on mount: current, else the saved default, else factory. */
+  starting(): string;
+  /** Record the live layout — wire to the dock's `change` event. */
+  remember(json: string): void;
+  /** The `Layout/…` rows for the dock's context menu. */
+  menu(): DockMenuItem[];
 };
 
 export const createDockLayoutStore = (args: {
-	/** Storage namespace, e.g. `"compare.dock"`. */
-	namespace: string;
-	/** The tool's seed layout. Called lazily so it can read live state. */
-	factory: () => string;
-	/** The dock's live layout — `handle.serialize()`. Read when saving a
-	 *  default, because a session that has not been rearranged yet has
-	 *  nothing stored and the live tree is still the answer. */
-	serialize: () => string | undefined;
-	/** Put a layout on screen. The store handles storing it. */
-	apply: (json: string) => void;
-	/** Where the two saved tiers go. `localStorage` unless the tool's host
-	 *  moves between runs — see `DockLayoutStorage`. */
-	storage?: DockLayoutStorage;
-	notify?: (text: string) => void;
+  /** Storage namespace, e.g. `"compare.dock"`. */
+  namespace: string;
+  /** The tool's seed layout. Called lazily so it can read live state. */
+  factory: () => string;
+  /** The dock's live layout — `handle.serialize()`. Read when saving a
+   *  default, because a session that has not been rearranged yet has
+   *  nothing stored and the live tree is still the answer. */
+  serialize: () => string | undefined;
+  /** Put a layout on screen. The store handles storing it. */
+  apply: (json: string) => void;
+  /** Where the two saved tiers go. `localStorage` unless the tool's host
+   *  moves between runs — see `DockLayoutStorage`. */
+  storage?: DockLayoutStorage;
+  notify?: (text: string) => void;
 }): DockLayoutStore => {
-	const currentKey = `${args.namespace}.layout`;
-	const defaultKey = `${args.namespace}.default`;
-	const { read, write } = args.storage ?? browserStorage;
+  const currentKey = `${args.namespace}.layout`;
+  const defaultKey = `${args.namespace}.default`;
+  const { read, write } = args.storage ?? browserStorage;
 
-	const applyAndStore = (json: string): void => {
-		args.apply(json);
-		write(currentKey, json);
-	};
+  const applyAndStore = (json: string): void => {
+    args.apply(json);
+    write(currentKey, json);
+  };
 
-	return {
-		starting: () => usableLayout(read(currentKey)) ?? usableLayout(read(defaultKey)) ?? args.factory(),
-		remember: (json) => write(currentKey, json),
-		menu: () => [
-			{
-				label: "Layout/Save",
-				/* the rule between what the kit does to panes and what the tool
+  return {
+    starting: () => usableLayout(read(currentKey)) ?? usableLayout(read(defaultKey)) ?? args.factory(),
+    remember: json => write(currentKey, json),
+    menu: () => [
+      {
+        label: 'Layout/Save',
+        /* the rule between what the kit does to panes and what the tool
 				   does to whole layouts — one folder, two halves */
-				separator: true,
-				run: () => {
-					const current = args.serialize() ?? read(currentKey);
-					if (current === undefined) {
-						return;
-					}
-					write(defaultKey, current);
-					args.notify?.("layout saved as default");
-				},
-			},
-			{
-				label: "Layout/Reset",
-				disabled: read(defaultKey) === undefined,
-				run: () => {
-					const saved = read(defaultKey);
-					if (saved) {
-						applyAndStore(saved);
-					}
-				},
-			},
-			{
-				label: "Layout/Default",
-				run: () => applyAndStore(args.factory()),
-			},
-			{
-				label: "Layout/Forget",
-				disabled: read(defaultKey) === undefined,
-				run: () => write(defaultKey, null),
-			},
-		],
-	};
+        separator: true,
+        run: () => {
+          const current = args.serialize() ?? read(currentKey);
+          if (current === undefined) {
+            return;
+          }
+          write(defaultKey, current);
+          args.notify?.('layout saved as default');
+        },
+      },
+      {
+        label: 'Layout/Reset',
+        disabled: read(defaultKey) === undefined,
+        run: () => {
+          const saved = read(defaultKey);
+          if (saved) {
+            applyAndStore(saved);
+          }
+        },
+      },
+      { label: 'Layout/Default', run: () => applyAndStore(args.factory()) },
+      { label: 'Layout/Forget', disabled: read(defaultKey) === undefined, run: () => write(defaultKey, null) },
+    ],
+  };
 };

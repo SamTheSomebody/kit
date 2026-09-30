@@ -1,7 +1,7 @@
 {
   "name": "@samthesomebody/kit",
-  "version": "0.1.1",
-  "description": "Tool chrome layout recipes + Svelte controls. Optional shell: @samthesomebody/dock (separate package).",
+  "version": "0.2.0",
+  "description": "Tool chrome layout recipes + Svelte controls + optional terminal panes. Optional shell: @samthesomebody/dock (separate package).",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -22,7 +22,15 @@
     "./components/index.css": "./components/index.css",
     "./components/*.css": "./components/*.css",
     "./components/*.svelte": "./components/*.svelte",
-    "./components/*.ts": "./components/*.ts"
+    "./components/*.ts": "./components/*.ts",
+    "./terminal": "./terminal/index.ts",
+    "./terminal/*.css": "./terminal/*.css"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/addon-unicode11": "^0.9.0",
+    "@xterm/xterm": "^6.0.0"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
@@ -34,6 +42,7 @@
     "*.json",
     "components",
     "fonts",
+    "terminal",
     "README.md"
   ],
   "publishConfig": {
@@ -44,6 +53,14 @@
     "svelte",
     "tooling",
     "chrome",
-    "ui-kit"
-  ]
+    "ui-kit",
+    "terminal",
+    "xterm"
+  ],
+  "scripts": {
+    "test": "vitest run terminal/tests dock/tests"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  }
 }

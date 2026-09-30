@@ -1,0 +1,281 @@
+/**
+ * The log pane — the console kit's structured pane (`logPane.ts`).
+ *
+ * Drawn to read like a browser's own console, in this estate's language: a
+ * bar of controls over a list of wrapping lines, a fixed clock column, the
+ * message in its level's colour, and the trailing furniture (a repeat count,
+ * a source) pushed to the far end.
+ *
+ * `--tool-*` and `--dock-*` only, no literal of its own — same rule as
+ * `terminal.css` beside it.
+ */
+
+.log-pane {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	background: var(--tool-panel);
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+}
+
+/* ── the bar ──────────────────────────────────────────────────────────
+   Clear, filter, levels — the three controls a console bar has, in the
+   order every console puts them. It does not scroll with the log: the
+   filter is how you get back out of four thousand lines. */
+/* IT WRAPS, and it has to. Compare's factory layout puts a console in a
+   ~130px strip beside each game, and clear + filter + five counted level keys
+   is ~300px of type — unwrapped, the levels ran off the edge and the reader
+   lost the one readout they were there for. Wrapped, a narrow pane spends two
+   or three lines on the bar and every control stays legible; a normal pane is
+   one line, unchanged. */
+.log-bar {
+	flex: none;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--dock-pad-tight);
+	padding: var(--dock-pad-tight);
+	border-block-end: var(--dock-divider) solid var(--tool-border);
+}
+
+.log-clear,
+.log-jump {
+	flex: none;
+	padding: 0 var(--dock-pad-tight);
+	background: none;
+	border: 0;
+	color: var(--tool-muted);
+	font-family: inherit;
+	font-size: inherit;
+	line-height: 1.6;
+	cursor: pointer;
+	transition: color var(--tool-duration-fast) var(--tool-ease-out);
+}
+
+.log-clear:hover,
+.log-jump:hover {
+	color: var(--tool-text);
+}
+
+.log-jump {
+	color: var(--tool-accent);
+}
+
+.log-jump[hidden] {
+	display: none;
+}
+
+/* The kit's boxless field: a line of type with a rule under it. Spelled
+   here rather than borrowed from `controls`, because the console kit is
+   reachable from surfaces that do not load the control kit's stylesheet. */
+.log-filter {
+	flex: 1 1 auto;
+	min-width: 6ch;
+	padding-block: calc(var(--tool-space-1) / 2);
+	background: none;
+	border: 0;
+	border-block-end: var(--dock-divider) solid var(--tool-border);
+	color: var(--tool-text);
+	font-family: inherit;
+	font-size: inherit;
+	transition: border-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+
+.log-filter::placeholder {
+	color: var(--tool-muted);
+}
+
+.log-filter:hover {
+	border-block-end-color: var(--tool-muted);
+}
+
+.log-filter:focus {
+	outline: 0;
+	border-block-end-color: var(--tool-accent);
+}
+
+/* ── the level keys ───────────────────────────────────────────────────
+   Latching, and each one carries its own count: the filter and the "how
+   bad is it" readout are the same control because they are the same
+   number. Unpressed is struck through rather than merely dimmed — a level
+   you have TURNED OFF must not look like a level that happens to be
+   quiet. */
+.log-levels {
+	display: flex;
+	flex-wrap: wrap;
+	gap: calc(var(--tool-space-1) / 2);
+}
+
+.log-level {
+	padding: 0 var(--dock-pad-tight);
+	background: none;
+	border: 0;
+	border-block-end: var(--dock-tab-underline) solid transparent;
+	color: var(--tool-muted);
+	font-family: inherit;
+	font-size: inherit;
+	line-height: 1.6;
+	font-variant-numeric: tabular-nums;
+	cursor: pointer;
+	transition:
+		color var(--tool-duration-fast) var(--tool-ease-out),
+		border-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+
+.log-level[aria-pressed="true"] {
+	border-block-end-color: var(--tool-border);
+	color: var(--tool-text);
+}
+
+.log-level[aria-pressed="false"] {
+	text-decoration: line-through;
+}
+
+.log-level.quiet {
+	opacity: var(--tool-disabled-opacity);
+}
+
+/* A level's own colour, but only when it is BOTH on and non-empty: a red
+   `error 0` in the bar is the pane crying wolf. */
+.log-level.error[aria-pressed="true"]:not(.quiet) {
+	color: var(--tool-danger);
+	border-block-end-color: var(--tool-danger);
+}
+
+.log-level.warn[aria-pressed="true"]:not(.quiet) {
+	color: var(--tool-highlight);
+	border-block-end-color: var(--tool-highlight);
+}
+
+/* ── the lines ────────────────────────────────────────────────────────
+   Oldest first, newest at the bottom, and the pane follows the tail
+   unless the reader has scrolled away from it (`log.ts`
+   `isPinnedToBottom`). */
+.log-view {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: auto;
+	overscroll-behavior: contain;
+}
+
+.log-lines {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.log-lines[hidden] {
+	display: none;
+}
+
+/* Clock in a fixed column so the messages line up and the message wraps
+   under itself rather than under the clock. The trailing column takes
+   only what it needs and disappears when there is nothing in it. */
+.log-line {
+	display: grid;
+	grid-template-columns: max-content minmax(0, 1fr) max-content;
+	gap: var(--dock-pad);
+	padding: calc(var(--tool-space-1) / 2) var(--dock-pad-tight);
+	border-block-end: var(--dock-divider) solid var(--tool-border);
+	line-height: 1.45;
+}
+
+.log-line:last-child {
+	border-block-end: 0;
+}
+
+.log-line:hover {
+	background: color-mix(in srgb, var(--tool-panel-hover) 40%, transparent);
+}
+
+.log-at {
+	color: var(--tool-muted);
+	font-variant-numeric: tabular-nums;
+	user-select: none;
+}
+
+.log-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+	color: var(--tool-text);
+}
+
+.log-line.warn .log-text {
+	color: var(--tool-highlight);
+}
+
+.log-line.error .log-text {
+	color: var(--tool-danger);
+}
+
+.log-line.debug .log-text,
+.log-line.info .log-text {
+	color: var(--tool-muted);
+}
+
+/* The whole row picks up a wash on the two levels that mean something is
+   wrong — the same device a console uses, at the weight text sits on. */
+.log-line.error {
+	background: color-mix(in srgb, var(--tool-danger) 8%, transparent);
+}
+
+.log-line.warn {
+	background: color-mix(in srgb, var(--tool-highlight) 7%, transparent);
+}
+
+.log-trailing {
+	display: flex;
+	align-items: baseline;
+	gap: var(--dock-pad-tight);
+	color: var(--tool-muted);
+	white-space: nowrap;
+}
+
+/* `×12` — the count on a line that arrived twelve times in a row. Reads as
+   a quantity, not a level, so it stays in the muted ramp whatever the
+   line's severity. */
+.log-repeats {
+	padding: 0 var(--dock-pad-tight);
+	border: var(--dock-divider) solid var(--tool-border);
+	font-variant-numeric: tabular-nums;
+}
+
+.log-source {
+	color: var(--tool-muted);
+}
+
+/* A URL or file path inside a message, same matcher the VT pane uses. A
+   button rather than an anchor: the kit resolves nothing itself, it hands
+   the target to a port. */
+.log-link {
+	padding: 0;
+	background: none;
+	border: 0;
+	color: var(--tool-cyan);
+	font: inherit;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	cursor: pointer;
+}
+
+.log-link:hover {
+	color: var(--tool-cyan-bright);
+}
+
+.log-empty {
+	margin: 0;
+	padding: var(--dock-pad);
+	color: var(--tool-muted);
+}
+
+.log-empty[hidden] {
+	display: none;
+}

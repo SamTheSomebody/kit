@@ -1,0 +1,5 @@
+terminal/tests/
+terminal/tsconfig.json
+**/tsconfig.tsbuildinfo
+package-lock.json
+*.tgz

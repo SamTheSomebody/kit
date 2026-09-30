@@ -1,0 +1,103 @@
+/**
+ * Console pane chrome — everything the emulator does not draw itself: the
+ * host box, the scrollbar, and the find bar. Colours and metrics are
+ * `--tool-*` only (`theme.ts` owns the ones xterm needs handed to it as
+ * values), so this file has no literal of its own.
+ */
+
+/* Matches the emulator's own `background` slot (`theme.ts`) — this shows
+   through in the fractional row at the bottom of a pane, and a mismatch there
+   reads as a seam. */
+.terminal-pane {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	background: var(--tool-panel);
+}
+
+/* The emulator measures itself against this box, so it must be the one that
+   flexes — a padded wrapper around it would make every fit() a cell short. */
+.terminal-screen {
+	flex: 1;
+	min-height: 0;
+	padding: var(--tool-space-1) 0 0 var(--tool-space-2);
+}
+
+.terminal-pane .xterm-viewport {
+	scrollbar-width: thin;
+	scrollbar-color: var(--tool-border) transparent;
+	background: transparent;
+}
+
+.terminal-pane .xterm-viewport::-webkit-scrollbar {
+	width: 10px;
+}
+
+.terminal-pane .xterm-viewport::-webkit-scrollbar-thumb {
+	background: var(--tool-border);
+}
+
+/* Overlays the output rather than displacing it: a find that reflowed the
+   buffer would move the very line the reader is trying to keep their eye on. */
+.terminal-find {
+	position: absolute;
+	top: var(--tool-space-2);
+	right: var(--tool-space-3);
+	display: flex;
+	align-items: center;
+	gap: var(--tool-space-1);
+	padding: var(--tool-space-1);
+	border: 1px solid var(--tool-border);
+	/* Lifted off the pane rather than flush with it: the bar floats over the
+	   output, and on the same ground it would have read as a hole in the text
+	   with a shadow round it. */
+	background: var(--tool-panel-hover);
+	box-shadow: var(--tool-shadow-1);
+}
+
+.terminal-find[hidden] {
+	display: none;
+}
+
+.terminal-find input {
+	width: 16rem;
+	padding: var(--tool-space-1) var(--tool-space-2);
+	border: 1px solid var(--tool-border);
+	background: var(--tool-panel);
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+}
+
+.terminal-find input:focus-visible {
+	outline: 2px solid var(--tool-accent);
+	outline-offset: 1px;
+}
+
+.terminal-find button {
+	padding: var(--tool-space-1) var(--tool-space-2);
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+	cursor: pointer;
+}
+
+.terminal-find button:hover {
+	background: var(--tool-panel-hover);
+	color: var(--tool-text);
+}
+
+.terminal-find .terminal-find-count {
+	min-width: 5rem;
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}

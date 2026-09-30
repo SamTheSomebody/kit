@@ -15,36 +15,21 @@
    package index; that import was removed 2026-09-05 so the kit's RULES could
    be imported without dragging a stylesheet into a game bundle, and the
    consumers that want the CSS now ask for it by name. */
-import "@samthesomebody/kit/components/index.css";
-import "./dock.css";
+import '@samthesomebody/kit/components/index.css';
+import './dock.css';
 
-export { createDock, DOCK_EXTERNAL_MIME } from "./view";
-export { DOCK_COMMANDS, DOCK_KEYMAP } from "./commands";
-export { closeDockMenu } from "./menu";
-export { applyDockTheme, DOCK_THEME, themeOf } from "./theme";
-export type { DockTheme } from "./theme";
-export type {
-	DockEventsPort,
-	DockExternalPort,
-	DockFloat,
-	DockHandle,
-	DockLeaf,
-	DockMark,
-	DockMenuContext,
-	DockMenuItem,
-	DockMenuPort,
-	DockNode,
-	DockOpenOptions,
-	DockPorts,
-	DockSerialized,
-	DockSplit,
-	DockTabDef,
-	DockTabsPort,
-	DockTabStatus,
-	DockZone,
-} from "./types";
+export { createDock, DOCK_EXTERNAL_MIME } from './view';
+export { DOCK_COMMANDS, DOCK_KEYMAP } from './commands';
+export { closeDockMenu } from './menu';
+export { applyDockTheme, DOCK_THEME, themeOf } from './theme';
+export type { DockTheme } from './theme';
+export type { DockEventsPort, DockExternalPort, DockFloat, DockHandle, DockLeaf, DockMark, DockMenuContext, DockMenuItem, DockMenuPort, DockNode, DockOpenOptions, DockPorts, DockSerialized, DockSplit, DockTabDef, DockTabsPort, DockTabStatus, DockZone } from './types';
 
 /* The escape hatch for content a re-parent would destroy — an iframe, a
    <video>, a scroll position (`slot.ts`). */
-export { followSlot } from "./slot";
-export type { SlotFollower, SlotRect } from "./slot";
+export { followSlot } from './slot';
+export type { SlotFollower, SlotRect } from './slot';
+
+/* Consumer half of serialize/hydrate — three-tier layout persistence. */
+export { createDockLayoutStore, dockLayoutJson, usableLayout } from './dockLayout';
+export type { DockLayoutStore, DockLayoutTabs } from './dockLayout';

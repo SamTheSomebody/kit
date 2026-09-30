@@ -1,6 +1,6 @@
 # @samthesomebody/kit
 
-Tool chrome **layout** (pane structure recipes) + **controls** (Svelte components).
+Tool chrome **layout** (pane structure recipes) + **controls** (Svelte components) + optional **terminal** panes (VT + structured log).
 
 Optional shell: [`@samthesomebody/dock`](./dock) — splits/tabs/floats. Depends on this package; this package does **not** depend on dock. forge rail / spine stages are peer shells.
 
@@ -59,13 +59,24 @@ Recipes: `fields` | `toolbar` | `stack`. Gaps: `--dock-pad` only.
 import '@samthesomebody/kit/components/index.css';
 ```
 
+## Terminal (optional)
+
+VT + log panes. Subpath only — root kit index does **not** pull xterm or terminal CSS.
+
+```ts
+import { createTerminalPane, createLogPane } from '@samthesomebody/kit/terminal';
+import '@samthesomebody/kit/tokens.css'; // --tool-* theme vars
+```
+
+CSS for the panes rides in with the `./terminal` import (`xterm.css` + `terminal.css`; log pane pulls `log.css`). Explicit CSS exports also exist: `@samthesomebody/kit/terminal/terminal.css`, `…/log.css`.
+
 ## Dock (optional)
 
 ```bash
 npm install @samthesomebody/dock
 ```
 
-See [`dock/README.md`](./dock/README.md).
+See [`dock/README.md`](./dock/README.md). Layout persistence helpers (`createDockLayoutStore`, `dockLayoutJson`, `usableLayout`) ship on the dock package root.
 
 ## Agents
 
