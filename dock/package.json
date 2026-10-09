@@ -1,6 +1,6 @@
 {
   "name": "@samthesomebody/dock",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Tool chrome shell: splits, tabs, floats. Depends on @samthesomebody/kit (controls). Kit does not depend on dock.",
   "type": "module",
   "license": "MIT",
@@ -24,7 +24,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@samthesomebody/kit": "^0.2.0"
+    "@samthesomebody/kit": "^0.2.1"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
