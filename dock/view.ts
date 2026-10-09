@@ -1223,8 +1223,44 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		});
 	};
 
+	/* ══ pointer gestures — one captured press, owned until it ends ═════
+	   Primary button only, and the press's default is prevented so no text
+	   selection or native drag can start under it. A gesture ends however
+	   the pointer goes: released, cancelled by the browser, or its capture
+	   lost (a window blur, a rerender) — a missed end would leave the sash
+	   following a pointer with no button down. */
+	const captureGesture = (
+		event: PointerEvent,
+		target: HTMLElement,
+		move: (event: PointerEvent) => void,
+		end: () => void,
+	): void => {
+		target.setPointerCapture(event.pointerId);
+		const finish = (): void => {
+			target.removeEventListener("pointermove", move);
+			target.removeEventListener("pointerup", finish);
+			target.removeEventListener("pointercancel", finish);
+			target.removeEventListener("lostpointercapture", finish);
+			end();
+		};
+		target.addEventListener("pointermove", move);
+		target.addEventListener("pointerup", finish);
+		target.addEventListener("pointercancel", finish);
+		target.addEventListener("lostpointercapture", finish);
+	};
+	const claimsPress = (event: PointerEvent): boolean => {
+		if (event.button !== 0) {
+			return false;
+		}
+		event.preventDefault();
+		return true;
+	};
+
 	/* ══ dividers — pointer-captured drag, min-pane clamp, no rAF ═══════ */
 	const onDividerDown = (event: PointerEvent, divider: HTMLElement, node: DockSplit): void => {
+		if (!claimsPress(event)) {
+			return;
+		}
 		const theme = themeOf(stage);
 		const horizontal = node.split === "row";
 		const parent = divider.parentElement;
@@ -1236,7 +1272,6 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		if (inner <= 0) {
 			return;
 		}
-		divider.setPointerCapture(event.pointerId);
 		divider.classList.add("active");
 		document.body.classList.add("resizing");
 		/* ONE clamp for both sides again: the floor is a label's height now, so
@@ -1252,29 +1287,26 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 			(divider.nextElementSibling as HTMLElement).style.flex = `${1 - node.ratio} 1 0`;
 			ports.on?.event?.("resize");
 		};
-		const up = (): void => {
+		captureGesture(event, divider, move, () => {
 			divider.classList.remove("active");
 			document.body.classList.remove("resizing");
-			divider.removeEventListener("pointermove", move);
-			divider.removeEventListener("pointerup", up);
 			emitChange();
-		};
-		divider.addEventListener("pointermove", move);
-		divider.addEventListener("pointerup", up);
+		});
 	};
 
 	/* ══ floats — pointer-event move / resize / z-order ═════════════════ */
 	/* Grip drag: pure window move — never dock-assigns (re-dock by
 	   dragging the float's tabs / strip / bar, ordinary drag sources). */
 	const startFloatMove = (event: PointerEvent, float: DockFloat, element: HTMLElement): void => {
-		event.preventDefault();
+		if (!claimsPress(event)) {
+			return;
+		}
 		element.classList.add("moving");
 		const theme = themeOf(stage);
 		const rect = stage.getBoundingClientRect();
 		const offsetX = event.clientX - float.x;
 		const offsetY = event.clientY - float.y;
 		const grip = event.currentTarget as HTMLElement;
-		grip.setPointerCapture(event.pointerId);
 		const move = (moveEvent: PointerEvent): void => {
 			float.x = Math.round(Math.max(0, Math.min(moveEvent.clientX - offsetX, rect.width - theme.stageClampMarginX)));
 			float.y = Math.round(Math.max(0, Math.min(moveEvent.clientY - offsetY, rect.height - theme.stageClampMarginY)));
@@ -1282,22 +1314,19 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 			element.style.top = `${float.y}px`;
 			ports.on?.event?.("zmove");
 		};
-		const up = (): void => {
+		captureGesture(event, grip, move, () => {
 			element.classList.remove("moving");
-			grip.removeEventListener("pointermove", move);
-			grip.removeEventListener("pointerup", up);
 			emitChange();
-		};
-		grip.addEventListener("pointermove", move);
-		grip.addEventListener("pointerup", up);
+		});
 	};
 
 	/** Resize from any edge or corner; the opposite edge stays anchored. */
 	const startFloatResize = (event: PointerEvent, float: DockFloat, element: HTMLElement, direction: string): void => {
-		event.preventDefault();
+		if (!claimsPress(event)) {
+			return;
+		}
 		event.stopPropagation();
 		const handle = event.currentTarget as HTMLElement;
-		handle.setPointerCapture(event.pointerId);
 		const theme = themeOf(stage);
 		const rect = stage.getBoundingClientRect();
 		const startX = event.clientX;
@@ -1328,13 +1357,7 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 			element.style.height = `${float.h}px`;
 			ports.on?.event?.("zmove");
 		};
-		const up = (): void => {
-			handle.removeEventListener("pointermove", move);
-			handle.removeEventListener("pointerup", up);
-			rerender();
-		};
-		handle.addEventListener("pointermove", move);
-		handle.addEventListener("pointerup", up);
+		captureGesture(event, handle, move, rerender);
 	};
 
 	/* ══ handle + automation seam ═══════════════════════════════════════ */

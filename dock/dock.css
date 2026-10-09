@@ -516,6 +516,7 @@ body.resizing * {
 	min-height: 0;
 	position: relative;
 	overflow: hidden;
+	isolation: isolate; /* a pane's own z-indexes never rise over a sash or window edge */
 }
 /* THE VERTICAL BAR IS THE KIT'S DRAWN RAIL, not a dressed native one: the
    body is the `.kit-scroll` frame and this is its `.kit-scroll-view`
@@ -673,7 +674,7 @@ body:has(.dock-float.moving) {
 /* invisible resize handles on every edge and corner — OS-window style */
 .dock-float-edge {
 	position: absolute;
-	z-index: var(--dock-z-spill);
+	z-index: calc(var(--dock-z-divider) + 1); /* over the grip and the window's own sashes */
 }
 .dock-float-edge[data-dir="n"] {
 	top: calc(-1 * var(--dock-float-edge-out));
