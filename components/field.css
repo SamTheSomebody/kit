@@ -62,7 +62,8 @@
   color: var(--tool-muted);
 }
 /* Number fields scrub sideways; native spin buttons do nothing useful and
-   steal end space. Firefox uses appearance; WebKit needs the pseudo hide. */
+   steal end space. Firefox uses appearance; WebKit needs the pseudo hide.
+   The kit's own chevrons replace them, and only while the field is hovered. */
 .kit-field input[type='number'] {
   appearance: textfield;
 }
@@ -70,6 +71,55 @@
 .kit-field input[type='number']::-webkit-inner-spin-button {
   appearance: none;
   margin: 0;
+}
+/* One chevron, twice: the up control is the same glyph turned over.
+   Stacked in the input's own line, with no rule and no gap between them.
+   Hidden until the field is hovered — the buttons sit inside the field, so
+   the pointer can reach them without the hover dropping. */
+.kit-field-stepper {
+  display: none;
+  flex: none;
+  align-self: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  height: calc(1.5 * var(--tool-font-size-body));
+}
+.kit-field:hover > .kit-field-stepper,
+.kit-field.is-hover > .kit-field-stepper {
+  display: inline-flex;
+}
+.kit-field-stepper button {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tool-muted);
+  font-family: var(--tool-font);
+  font-size: calc(var(--tool-font-size-body) * 1.5);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-field-stepper .kit-step-up .kit-glyph {
+  transform: rotate(180deg);
+}
+/* The glyph's line box is taller than its half of the stack, and the turned
+   one paints on top, so it would take the other button's presses. */
+.kit-field-stepper .kit-glyph {
+  pointer-events: none;
+}
+.kit-field-stepper button:hover:not(:disabled) {
+  color: var(--tool-text);
+}
+.kit-field-stepper button:disabled {
+  cursor: default;
 }
 /* The caret is part of the control, not a decal on it: the select is
    stretched OVER the caret's corner and the caret sits behind it, so a

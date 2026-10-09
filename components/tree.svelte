@@ -51,6 +51,7 @@
 		select = false,
 		reorder = false,
 		mark = "visible",
+		eye = true,
 		disabled = false,
 		onmark,
 		onreorder,
@@ -65,6 +66,8 @@
 		reorder?: boolean;
 		/* which icon carries the mark in the plain form */
 		mark?: IconName;
+		/* the seen/not-seen control. Off for a list that only selects. */
+		eye?: boolean;
 		disabled?: boolean;
 		onmark?: (marked: Set<string>) => void;
 		onreorder?: (nodes: TreeNode[]) => void;
@@ -119,7 +122,7 @@
 	   on any eye in the estate paints this row — there is no second latch
 	   here to fall out of step with the first. */
 	const crossPaint = (node: TreeNode): void => {
-		if (disabled || node.disabled) {
+		if (!eye || disabled || node.disabled) {
 			return;
 		}
 		const on = crossedTo(stroke(), markState(node, marked) === "on");
@@ -186,7 +189,7 @@
 		} else if (event.key === "ArrowLeft" && !row.leaf && expanded.has(row.node.id)) {
 			event.preventDefault();
 			toggleTwist(row.node.id);
-		} else if (event.key === " ") {
+		} else if (eye && event.key === " ") {
 			event.preventDefault();
 			paint(row.node, markState(row.node, marked) !== "on");
 		}
@@ -200,7 +203,7 @@
 		<div
 			class="kit-tree-row"
 			class:on={selected === row.node.id}
-			class:off={!select && markState(row.node, marked) === "off"}
+			class:off={eye && !select && markState(row.node, marked) === "off"}
 			class:disabled={disabled || row.node.disabled}
 			class:dragging={drag?.id === row.node.id}
 			class:dropmark={dropAt?.id === row.node.id && dropAt.side === "before"}
@@ -276,15 +279,17 @@
 				{/if}
 			{:else}
 				<span class="kit-tree-label">{row.node.label}</span>
-				<IconButton
-					class="kit-tree-eye"
-					name={mark}
-					label={row.node.label}
-					pressed={markState(row.node, marked) === "on"}
-					disabled={disabled || row.node.disabled}
-					tip={false}
-					ontoggle={(on) => paint(row.node, on)}
-				/>
+				{#if eye}
+					<IconButton
+						class="kit-tree-eye"
+						name={mark}
+						label={row.node.label}
+						pressed={markState(row.node, marked) === "on"}
+						disabled={disabled || row.node.disabled}
+						tip={false}
+						ontoggle={(on) => paint(row.node, on)}
+					/>
+				{/if}
 			{/if}
 		</div>
 	{/each}

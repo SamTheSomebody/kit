@@ -16,15 +16,23 @@
 	   those, and a tab costs no pixels until it is asked for. */
 	let {
 		title,
+		status,
 		children,
 	}: {
 		/** Omit for a bare rule: a line break that says nothing more. */
 		title?: string;
+		/** Status badges for the whole section, at the right end of the title rule. Needs `title`. */
+		status?: Snippet;
 		children: Snippet;
 	} = $props();
 </script>
 
 <section class="kit-section" class:bare={title === undefined}>
-	{#if title}<span class="kit-section-title">{title}</span>{/if}
+	{#if title}
+		<span class="kit-section-title">
+			{title}
+			{#if status}<span class="kit-section-status">{@render status()}</span>{/if}
+		</span>
+	{/if}
 	<div class="kit-section-body">{@render children()}</div>
 </section>

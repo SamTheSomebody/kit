@@ -11,7 +11,8 @@
    off it. Nothing is enclosed; things are separated.
 
    Title row is break **A** (locked 2026-09-23): `[caption] ———` on one
-   line (text + flex hairline), both `--tool-text`. No title = the rule
+   line (text + flex hairline), both `--tool-text`. Status badges for the
+   section close the rule: `[caption] ——— [badges]`. No title = the rule
    alone. Prior sibling → air only, no extra hairline between sections.
 
    No padding of its own, either. A `Pane` pads once, at the edge, and
@@ -45,6 +46,14 @@
   min-width: var(--tool-space-4);
   height: 0;
   border-block-end: var(--dock-divider) solid currentColor;
+}
+
+/* Status badges close the rule: `[caption] ——— [badges]`. */
+.kit-section-status {
+  order: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--dock-pad-tight);
 }
 
 /* Untitled: the rule alone — a line break that says nothing more. */

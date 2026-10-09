@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { bindScrub, SCRUB_TIP, type IconName } from "./index.ts";
+	import { bindScrub, SCRUB_TIP, scrubMagnitude, stepText, type IconName } from "./index.ts";
 
+	import Icon from "./icon.svelte";
 	import IconButton from "./iconButton.svelte";
 	import Label from "./label.svelte";
 
@@ -14,6 +15,12 @@
 	   The trailing `action` is a frameless icon behind a `|` divider. The
 	   divider is what makes the slot format-agnostic: a glyph sits in it and
 	   so does a word, with no other rule changing.
+
+	   A NUMBER FIELD also carries two chevrons stacked on the right — the same
+	   glyph, one turned up — and only while the field is hovered. Native
+	   spin buttons stay hidden (scrub claimed that end), so these are the
+	   explicit click targets. `bindScrub` already yields to buttons inside
+	   the box, so a press on either chevron is a step, not a drag.
 
 	   A FIELD AND ITS MESSAGE ARE ONE BLOCK. Left as bare siblings, the
 	   distance between them is whatever the CONTAINER's `gap` is — 7px in a
@@ -97,6 +104,7 @@
 	let input = $state<HTMLInputElement | undefined>(undefined);
 
 	const scrubbable = $derived(type === "number" && !disabled && scrub);
+	const steppable = $derived(type === "number");
 
 	/* Clamped to the field's own bounds as it goes, not on commit: `min`/`max`
 	   on an `<input type="number">` are validated when the value is submitted
@@ -104,6 +112,25 @@
 	   sail past both and leave the field invalid with no complaint. */
 	const clamped = (numeric: number): number =>
 		Math.min(max ?? Number.POSITIVE_INFINITY, Math.max(min ?? Number.NEGATIVE_INFINITY, numeric));
+
+	const writeNumber = (numeric: number): void => {
+		const next = clamped(numeric);
+		value = typeof value === "number" ? next : String(next);
+		oninput?.(String(next));
+	};
+
+	/* Same arithmetic as the scrub, including shift ×10 / alt ×0.1, so a
+	   click and a drag never disagree about what one step means. */
+	const nudge = (direction: 1 | -1, event: MouseEvent): void => {
+		if (disabled) return;
+		const delta = direction * scrubMagnitude(step ?? 1, event);
+		const numeric = Number(stepText(String(value), delta));
+		if (!Number.isFinite(numeric)) return;
+		writeNumber(numeric);
+		/* A discrete click is a commit: consumers that only sync on blur
+		   (packer scales) still see the change without a second gesture. */
+		onblur?.();
+	};
 
 	$effect(() => {
 		const handle = box;
@@ -114,12 +141,8 @@
 			read: () => String(value),
 			write: (text) => {
 				const numeric = Number(text);
-				const next = Number.isFinite(numeric) ? clamped(numeric) : undefined;
-				if (next === undefined) {
-					return;
-				}
-				value = typeof value === "number" ? next : String(next);
-				oninput?.(String(next));
+				if (!Number.isFinite(numeric)) return;
+				writeNumber(numeric);
 			},
 			step: () => step ?? 1,
 			click: () => input?.focus(),
@@ -153,6 +176,30 @@
 			onkeydown={(event) => onkeydown?.(event)}
 		/>
 		{#if unit}<span class="kit-unit">{unit}</span>{/if}
+		{#if steppable}
+			<span class="kit-field-stepper">
+				<button
+					class="kit-step-up"
+					type="button"
+					tabindex="-1"
+					aria-label="Increment"
+					{disabled}
+					onclick={event => nudge(1, event)}
+				>
+					<Icon name="collapse" />
+				</button>
+				<button
+					class="kit-step-down"
+					type="button"
+					tabindex="-1"
+					aria-label="Decrement"
+					{disabled}
+					onclick={event => nudge(-1, event)}
+				>
+					<Icon name="collapse" />
+				</button>
+			</span>
+		{/if}
 		{#if action}
 			<IconButton
 				class="kit-field-action"
