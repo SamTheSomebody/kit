@@ -59,6 +59,27 @@ Recipes: `fields` | `toolbar` | `stack`. Gaps: `--dock-pad` only.
 import '@samthesomebody/kit/components/index.css';
 ```
 
+### Section status badges
+
+A section's status (a check, a measurement, a warning) goes in `Section`'s `status` snippet. It closes the title rule: `[caption] ——— [badges]`. Not in the section's control rows, not on a row of its own.
+
+```svelte
+<script>
+  import Badge from '@samthesomebody/kit/components/badge.svelte';
+  import Section from '@samthesomebody/kit/components/section.svelte';
+</script>
+
+<Section title="Grid">
+  {#snippet status()}
+    <Badge tone="ok" text="fits" />
+    <Badge text="12 × 8" />
+  {/snippet}
+  <!-- control rows -->
+</Section>
+```
+
+`status` needs a `title`; an untitled section is a bare rule and drops it.
+
 ## Terminal (optional)
 
 VT + log panes. Subpath only — root kit index does **not** pull xterm or terminal CSS.
