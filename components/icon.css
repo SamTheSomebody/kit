@@ -65,14 +65,18 @@
   align-items: center;
 }
 /* one icon, two states: `aria-pressed` picks the form, so the toggle's
-   truth lives in the attribute a screen reader reads, not in a class */
-.kit-icon [data-when='on'] {
+   truth lives in the attribute a screen reader reads, not in a class. A
+   key reads `aria-checked` the same way (its `checked` is a switch). */
+.kit-icon [data-when='on'],
+.btn-key [data-when='on'] {
   display: none;
 }
-.kit-icon[aria-pressed='true'] [data-when='on'] {
+.kit-icon[aria-pressed='true'] [data-when='on'],
+.btn-key:is([aria-pressed='true'], [aria-checked='true']) [data-when='on'] {
   display: inline;
 }
-.kit-icon[aria-pressed='true'] [data-when='off'] {
+.kit-icon[aria-pressed='true'] [data-when='off'],
+.btn-key:is([aria-pressed='true'], [aria-checked='true']) [data-when='off'] {
   display: none;
 }
 .kit-icon:disabled {
