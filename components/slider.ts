@@ -77,7 +77,7 @@ export const sliderFill = (state: SliderRange): number => {
    width, so the control's own width never changes. It follows the number
    BOTH ways — a field that only ratchets wider ends up sized for the longest
    thing ever typed into it. */
-export const sliderDigits = (value: number): number => Math.max(1, String(value).length);
+export const sliderDigits = (value: number | string): number => Math.max(1, String(value).length);
 
 export type DualRange = {
 	from: number;

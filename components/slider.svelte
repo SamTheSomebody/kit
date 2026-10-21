@@ -105,7 +105,9 @@
 		write(syncSlider({ ...range, min: range.defaultMin, max: range.defaultMax }, range.value, { grow: false }));
 
 	const fill = $derived(sliderFill(range));
-	const digits = $derived(sliderDigits(range.value));
+	/* mid-edit the value is pinned at the track's max, so the width follows
+	   what was typed or a number past it would not fit */
+	const digits = $derived(sliderDigits(editing ? typed : range.value));
 </script>
 
 <div
