@@ -24,7 +24,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@samthesomebody/kit": "^0.2.1"
+    "@samthesomebody/kit": "^0.2.2"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"

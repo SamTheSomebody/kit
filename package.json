@@ -1,66 +1,24 @@
 {
-  "name": "@samthesomebody/kit",
-  "version": "0.2.2",
-  "description": "Tool chrome layout recipes + Svelte controls + optional terminal panes. Optional shell: @samthesomebody/dock (separate package).",
+  "name": "@samthesomebody/kit-repo",
+  "private": true,
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SamTheSomebody/kit.git"
   },
-  "exports": {
-    ".": "./index.ts",
-    "./package.json": "./package.json",
-    "./layout.css": "./layout.css",
-    "./tokens.css": "./tokens.css",
-    "./column.svelte": "./column.svelte",
-    "./columns.svelte": "./columns.svelte",
-    "./row.svelte": "./row.svelte",
-    "./container.svelte": "./container.svelte",
-    "./slot.svelte": "./slot.svelte",
-    "./components": "./components/index.ts",
-    "./components/index.css": "./components/index.css",
-    "./components/*.css": "./components/*.css",
-    "./components/*.svelte": "./components/*.svelte",
-    "./components/*.ts": "./components/*.ts",
-    "./terminal": "./terminal/index.ts",
-    "./terminal/*.css": "./terminal/*.css"
-  },
-  "dependencies": {
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/addon-search": "^0.16.0",
-    "@xterm/addon-unicode11": "^0.9.0",
-    "@xterm/xterm": "^6.0.0"
-  },
-  "peerDependencies": {
-    "svelte": "^5.0.0"
-  },
-  "files": [
-    "*.ts",
-    "*.svelte",
-    "*.css",
-    "*.json",
-    "components",
-    "fonts",
-    "terminal",
-    "README.md"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "keywords": [
-    "layout",
-    "svelte",
-    "tooling",
-    "chrome",
-    "ui-kit",
-    "terminal",
-    "xterm"
+  "workspaces": [
+    "kit",
+    "dock"
   ],
   "scripts": {
-    "test": "vitest run terminal/tests dock/tests"
+    "test": "vitest run kit/terminal/tests dock/tests",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "vitest": "^4.1.11"
   }
 }

@@ -2,7 +2,7 @@
 
 Tool chrome **shell**: splits, tabs, floats.
 
-Depends on [`@samthesomebody/kit`](https://www.npmjs.com/package/@samthesomebody/kit) for controls CSS/logic. **Kit does not depend on dock** — layout+controls work without a shell; shells (this package, forge rail, spine stages) sit above kit.
+Depends on [`@samthesomebody/kit`](https://www.npmjs.com/package/@samthesomebody/kit) (repo: [`../kit`](../kit)) for controls CSS/logic. **Kit does not depend on dock** — layout+controls work without a shell; shells (this package, forge rail, spine stages) sit above kit.
 
 ## Install
 
@@ -42,6 +42,10 @@ import type { DockLayoutStore, DockLayoutTabs } from '@samthesomebody/dock';
 | ---------------------- | ---------------------------------- |
 | `@samthesomebody/kit`  | layout + components + `./terminal` |
 | `@samthesomebody/dock` | shell (optional)                   |
+
+## Release
+
+Versioned with the root repo via Changesets. See [../README.md](../README.md#release).
 
 ## License
 

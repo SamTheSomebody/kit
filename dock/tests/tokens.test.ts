@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { DOCK_THEME } from '../index.ts';
 import { describe, expect, it } from 'vitest';
 
-const tokens = readFileSync(join(import.meta.dirname, '..', '..', 'tokens.css'), 'utf8');
+const tokens = readFileSync(join(import.meta.dirname, '..', '..', 'kit', 'tokens.css'), 'utf8');
 
 const declared = (name: string): string => {
   const match = tokens.match(new RegExp(`${name}:\\s*([^;]+);`));
@@ -45,7 +45,7 @@ describe('the dock knobs the controls spend', () => {
   /* If the kit starts spending an eleventh, it needs a default here too or it
 	   silently loses that rule outside a dock. */
   it("covers every --dock-* the kit's own CSS reads", () => {
-    const directory = join(import.meta.dirname, '..', '..', 'components');
+    const directory = join(import.meta.dirname, '..', '..', 'kit', 'components');
     const read = readdirSync(directory)
       .filter(name => name.endsWith('.css') || name.endsWith('.svelte'))
       .flatMap(name => [...readFileSync(join(directory, name), 'utf8').matchAll(/--dock-[a-z-]+/g)])

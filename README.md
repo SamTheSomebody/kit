@@ -4,6 +4,8 @@ Tool chrome **layout** (pane structure recipes) + **controls** (Svelte component
 
 Optional shell: [`@samthesomebody/dock`](./dock) — splits/tabs/floats. Depends on this package; this package does **not** depend on dock. forge rail / spine stages are peer shells.
 
+Layout in this repo: `kit/` (`@samthesomebody/kit`) and `dock/` (`@samthesomebody/dock`) as npm workspaces.
+
 ## Install
 
 ```bash
@@ -98,6 +100,28 @@ npm install @samthesomebody/dock
 ```
 
 See [`dock/README.md`](./dock/README.md). Layout persistence helpers (`createDockLayoutStore`, `dockLayoutJson`, `usableLayout`) ship on the dock package root.
+
+## Release
+
+Uses [Changesets](https://changesets.dev) + npm [trusted publishing](https://docs.npmjs.com/trusted-publishers/) (OIDC). No long-lived `NPM_TOKEN` — classic tokens are dead; bypass-2FA write tokens are being removed.
+
+1. On a PR / branch: `npm run changeset` → commit the file under `.changeset/`
+2. Merge to `main` → Actions opens a **Version Packages** PR (bumps + changelogs)
+3. Merge that PR → Actions publishes `@samthesomebody/kit` and/or `@samthesomebody/dock` with provenance
+
+### One-time setup
+
+**GitHub** (repo Settings → Actions → General): allow Actions to create and approve pull requests.
+
+**npmjs.com** — for **both** `@samthesomebody/kit` and `@samthesomebody/dock`:
+
+- Package → Settings → Trusted Publisher → GitHub Actions
+  - Owner: `SamTheSomebody`
+  - Repo: `kit`
+  - Workflow filename: `publish.yml` (name only, not a path)
+  - Allowed actions: enable **`npm publish`** (Changesets cannot use stage-only yet; new publishers after 2026-09-03 default to stage-only)
+- First successful publish must happen within **2 days** of creating the publisher, or it expires
+- After OIDC works: Publishing access → prefer requiring 2FA and **disallow tokens**
 
 ## Agents
 
