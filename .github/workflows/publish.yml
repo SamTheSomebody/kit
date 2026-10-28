@@ -5,6 +5,9 @@
 # npm security (2025–2027): classic tokens revoked; write tokens expire ≤90d;
 # bypass-2FA tokens being removed. Prefer trusted publishing (OIDC) — no NPM_TOKEN.
 #
+# Do NOT set registry-url / NODE_AUTH_TOKEN on the publish job — that forces
+# token auth and blocks OIDC trusted publishing.
+#
 # One-time npmjs.com setup (both packages):
 #   Settings → Trusted Publisher → GitHub Actions
 #     owner: SamTheSomebody
@@ -19,6 +22,7 @@ name: publish
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions: {}
 
@@ -42,7 +46,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          package-manager-cache: false
 
       - name: Require npm for trusted publishing
         run: |
@@ -71,7 +74,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          package-manager-cache: false
 
       - run: npm install -g npm@^11.5.1
       - run: npm install
@@ -94,7 +96,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          package-manager-cache: false
 
       - run: npm install -g npm@^11.5.1
       - run: npm install
@@ -118,8 +119,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          registry-url: https://registry.npmjs.org
-          package-manager-cache: false
+          # No registry-url: that writes an authToken npmrc and breaks OIDC.
 
       - run: npm install -g npm@^11.5.1
       - run: npm install
