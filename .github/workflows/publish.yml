@@ -45,7 +45,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
 
       - name: Require npm for trusted publishing
         run: |
@@ -73,7 +73,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
 
       - run: npm install -g npm@^11.5.1
       - run: npm install
@@ -95,7 +95,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
 
       - run: npm install -g npm@^11.5.1
       - run: npm install
@@ -118,7 +118,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
           # No registry-url: that writes an authToken npmrc and breaks OIDC.
 
       - run: npm install -g npm@^11.5.1
