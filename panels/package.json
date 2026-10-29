@@ -1,6 +1,6 @@
 {
   "name": "@samthesomebody/panels",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Tool panes composed from @samthesomebody/kit: Console, Hierarchy and Inspector. Kit does not depend on panels.",
   "type": "module",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@samthesomebody/kit": "^0.2.3"
+    "@samthesomebody/kit": "^0.3.0"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
