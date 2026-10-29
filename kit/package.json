@@ -3,6 +3,10 @@
   "version": "0.2.3",
   "description": "Tool chrome layout recipes + Svelte controls + optional terminal panes. Optional shell: @samthesomebody/dock (separate package).",
   "type": "module",
+  "svelte": "./index.ts",
+  "bin": {
+    "kit-check": "./check/cli.js"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -10,22 +14,31 @@
     "directory": "kit"
   },
   "exports": {
-    ".": "./index.ts",
+    ".": {
+      "svelte": "./index.ts",
+      "default": "./index.ts"
+    },
     "./package.json": "./package.json",
     "./layout.css": "./layout.css",
     "./tokens.css": "./tokens.css",
+    "./vars.css": "./vars.css",
+    "./base.css": "./base.css",
     "./column.svelte": "./column.svelte",
     "./columns.svelte": "./columns.svelte",
     "./row.svelte": "./row.svelte",
     "./container.svelte": "./container.svelte",
     "./slot.svelte": "./slot.svelte",
-    "./components": "./components/index.ts",
+    "./components": {
+      "svelte": "./components/index.ts",
+      "default": "./components/index.ts"
+    },
     "./components/index.css": "./components/index.css",
     "./components/*.css": "./components/*.css",
     "./components/*.svelte": "./components/*.svelte",
     "./components/*.ts": "./components/*.ts",
     "./terminal": "./terminal/index.ts",
-    "./terminal/*.css": "./terminal/*.css"
+    "./terminal/*.css": "./terminal/*.css",
+    "./terminal/*.ts": "./terminal/*.ts"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -44,7 +57,9 @@
     "components",
     "fonts",
     "terminal",
-    "README.md"
+    "README.md",
+    "check/*.js",
+    "SKILL.md"
   ],
   "publishConfig": {
     "access": "public"

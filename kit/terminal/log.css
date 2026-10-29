@@ -142,6 +142,16 @@
 	opacity: var(--tool-disabled-opacity);
 }
 
+/* A toggle (Collapse, an error pause) is an option, not a level: off is
+   muted rather than struck through, on carries the accent rule. */
+.log-level.toggle[aria-pressed="false"] {
+	text-decoration: none;
+}
+
+.log-level.toggle[aria-pressed="true"] {
+	border-block-end-color: var(--tool-accent);
+}
+
 /* A level's own colour, but only when it is BOTH on and non-empty: a red
    `error 0` in the bar is the pane crying wolf. */
 .log-level.error[aria-pressed="true"]:not(.quiet) {
@@ -278,4 +288,58 @@
 
 .log-empty[hidden] {
 	display: none;
+}
+
+/* ── the Svelte console's extra parts (`components/console*.svelte`) ────
+   Same sheet, so a composed console and `createLogPane` read alike. */
+
+/* A pickable line says so on hover; the picked one carries the accent
+   edge the tree and table use for a selection. */
+.log-line.pickable {
+	cursor: pointer;
+}
+
+.log-line.pickable:focus-visible {
+	outline: 1px solid var(--tool-accent);
+	outline-offset: -1px;
+}
+
+.log-line.picked {
+	box-shadow: inset var(--dock-tab-underline) 0 0 var(--tool-accent);
+}
+
+/* The prompt: the filter's boxless field behind a muted chevron, pinned
+   under the lines. */
+.log-input {
+	flex: none;
+	display: flex;
+	align-items: baseline;
+	gap: var(--dock-pad-tight);
+	margin: 0;
+	padding: var(--dock-pad-tight);
+	border-block-start: var(--dock-divider) solid var(--tool-border);
+}
+
+.log-prompt {
+	color: var(--tool-accent);
+	user-select: none;
+}
+
+/* The picked line in full, under the list. Capped so a stack trace cannot
+   push the lines out of the pane. */
+.log-detail.log-line {
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	gap: calc(var(--tool-space-1) / 2);
+	max-height: 40%;
+	overflow: auto;
+	border-block-end: 0;
+	border-block-start: var(--dock-divider) solid var(--tool-border);
+}
+
+.log-detail-more {
+	color: var(--tool-muted);
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
 }

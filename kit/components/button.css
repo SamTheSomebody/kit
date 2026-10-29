@@ -119,3 +119,8 @@
 .kit-split-caret {
 	padding-inline: var(--dock-pad-tight);
 }
+
+/* `hidden` has to hide: `display` above beats the UA `[hidden]` rule. */
+.btn[hidden] {
+	display: none;
+}

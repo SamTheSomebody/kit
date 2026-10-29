@@ -22,6 +22,8 @@ import '@samthesomebody/kit/layout.css';
 import '@samthesomebody/kit/tokens.css';
 ```
 
+`tokens.css` is `vars.css` (fonts and `:root` variables) plus `base.css` (page resets). On a page the tool doesn't own, load `vars.css` and scope or skip `base.css`.
+
 Svelte:
 
 ```svelte
@@ -104,3 +106,7 @@ Source + release process: [github.com/SamTheSomebody/kit](https://github.com/Sam
 ## License
 
 MIT
+
+## kit-check
+
+`kit-check` holds a consumer's tool chrome to the kit's rules (colour tokens, no structural CSS, no restyling kit classes, type scale, square corners, kit controls over native ones). Add `"kitCheck": { "include": ["src/editor"] }` to the consumer's package.json and run `kit-check --update` once to baseline what is already there; after that the baseline only shrinks. `SKILL.md` in this package is the agent-facing version.

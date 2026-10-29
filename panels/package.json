@@ -1,0 +1,39 @@
+{
+  "name": "@samthesomebody/panels",
+  "version": "0.0.0",
+  "description": "Tool panes composed from @samthesomebody/kit: Console, Hierarchy and Inspector. Kit does not depend on panels.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamTheSomebody/kit.git",
+    "directory": "panels"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./*.svelte": {
+      "svelte": "./*.svelte",
+      "default": "./*.svelte"
+    }
+  },
+  "files": [
+    "*.svelte",
+    "README.md"
+  ],
+  "dependencies": {
+    "@samthesomebody/kit": "^0.2.3"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "console",
+    "hierarchy",
+    "inspector",
+    "svelte",
+    "tooling"
+  ]
+}

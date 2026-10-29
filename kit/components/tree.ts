@@ -7,6 +7,11 @@
  * they belong to a shape, and `tree.test.ts` holds them.
  */
 
+export type TreeBadge = {
+	readonly text: string;
+	readonly tone?: "default" | "ok" | "warn" | "danger" | "busy";
+};
+
 export type TreeNode = {
 	id: string;
 	label: string;
@@ -14,6 +19,15 @@ export type TreeNode = {
 	/* a count beside the label, for a multi-select parent */
 	count?: boolean;
 	disabled?: boolean;
+	/* what the node IS, as the trailing muted column; not drawn when it is
+	   the label again */
+	kind?: string;
+	/* muted secondary text after the label: a source, a slot */
+	note?: string;
+	badges?: readonly TreeBadge[];
+	/* the label in the muted colour: present but not in play (hidden, not
+	   ready) */
+	muted?: boolean;
 };
 
 export type TreeRow = {
@@ -269,3 +283,38 @@ export const rowForKey = (rows: TreeRow[], currentId: string | undefined, key: s
 	}
 	return undefined;
 };
+
+/* What a filter matches on a row: the label, the kind and the note. */
+export const treeNodeMatches = (node: TreeNode, needle: string): boolean =>
+	[node.label, node.kind ?? "", node.note ?? ""].join(" ").toLowerCase().includes(needle);
+
+/* The tree cut to the rows that match `needle` and the branches above them,
+   so a match is still read in its place. An empty needle is the whole tree. */
+export const filterTree = (nodes: readonly TreeNode[], needle: string): TreeNode[] => {
+	const lowered = needle.trim().toLowerCase();
+	if (lowered === "") return [...nodes];
+	return nodes.flatMap((node): TreeNode[] => {
+		const children = filterTree(node.children ?? [], lowered);
+		if (children.length > 0) return [{ ...node, children }];
+		return treeNodeMatches(node, lowered) ? [{ ...node, children: undefined }] : [];
+	});
+};
+
+/* The ids of the branches above `id`, outermost first; undefined when it is
+   not in the tree. */
+export const ancestorIds = (nodes: readonly TreeNode[], id: string): string[] | undefined => {
+	for (const node of nodes) {
+		if (node.id === id) return [];
+		const below = ancestorIds(node.children ?? [], id);
+		if (below !== undefined) return [node.id, ...below];
+	}
+	return undefined;
+};
+
+/* Every branch id (a node with children), depth first. */
+export const branchIds = (nodes: readonly TreeNode[]): string[] =>
+	nodes.flatMap((node) => (node.children && node.children.length > 0 ? [node.id, ...branchIds(node.children)] : []));
+
+/* How many nodes the tree holds, at every depth. */
+export const nodeCount = (nodes: readonly TreeNode[]): number =>
+	nodes.reduce((total, node) => total + 1 + nodeCount(node.children ?? []), 0);

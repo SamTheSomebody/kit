@@ -1,0 +1,60 @@
+/* The page resets a tool that OWNS its page inherits. On a page the tool
+   does not own, scope this sheet to the tool's root or leave it out —
+   `vars.css` alone carries everything the controls spend. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--tool-bg);
+  color: var(--tool-text);
+  font-family: var(--tool-font);
+  font-size: var(--tool-font-size-body);
+}
+
+/* Base resets every tool inherits instead of re-declaring them. Promoted
+   from the dock-kit design artifact, 2026-09-03 (spec §Base-class
+   promotions 3): a button that does not inherit the tool font and colour
+   reads as browser chrome, and the selection/focus colours are part of the
+   palette, not per-tool decisions. */
+button {
+  font-family: var(--tool-font);
+  color: var(--tool-text);
+}
+
+::selection {
+  background: var(--tool-accent);
+  color: var(--tool-panel);
+}
+
+:focus-visible {
+  outline: 2px solid var(--tool-accent);
+  outline-offset: 1px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--tool-muted);
+  font-family: var(--tool-font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

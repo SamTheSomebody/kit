@@ -23,7 +23,7 @@ export { createTerminalPane } from './pane.ts';
    console" cost). */
 export { createLogPane } from './logPane.ts';
 export type { LogPaneHandle, LogPanePorts } from './logPane.ts';
-export { appendEntry, clockText, countByLevel, filterEntries, isPinnedToBottom, LOG_LEVELS, logText, matchesFilter } from './log.ts';
+export { appendEntry, clockText, collapseEntries, countByLevel, entryKey, filterEntries, isPinnedToBottom, LOG_LEVELS, logText, matchesFilter } from './log.ts';
 export type { LogEntry, LogFilter, LogInput, LogLevel } from './log.ts';
 export { describeTerminalLink, matchTerminalLinks } from './links.ts';
 export type { TerminalLinkMatch } from './links.ts';

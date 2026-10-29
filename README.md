@@ -24,6 +24,8 @@ import '@samthesomebody/kit/layout.css';
 import '@samthesomebody/kit/tokens.css';
 ```
 
+`tokens.css` is `vars.css` (fonts and `:root` variables) plus `base.css` (page resets). On a page the tool doesn't own, load `vars.css` and scope or skip `base.css`.
+
 Svelte:
 
 ```svelte
@@ -130,3 +132,7 @@ Intent → recipe: see game-mono `docs/skills/tool-chrome/SKILL.md` until mirror
 ## License
 
 MIT
+
+## Panels
+
+[`@samthesomebody/panels`](panels) composes kit into whole panes (Console, Hierarchy, Inspector). Kit does not depend on it.

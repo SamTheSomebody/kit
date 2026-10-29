@@ -310,6 +310,12 @@
   width: auto;
   flex: 1 1 12ch;
 }
+/* Inside a Slot a block shares the track like a bare field does (layout.css
+   `.kit-slot > .kit-field`): basis 0, so the slack goes to the block and not
+   to whatever sits beside it. */
+.kit-slot > .kit-field-block {
+	flex: 1 1 0;
+}
 /* Toolbar strips keep fields intrinsic — grow eats the keys beside them. */
 .kit-row[data-recipe='toolbar'] .kit-field-block,
 .kit-bar .kit-field-block {

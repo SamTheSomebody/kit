@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 
+	import IconButton from "./iconButton.svelte";
+
 	import "./section.css";
 
 	/* A NAMED LINE BREAK, and the replacement for every card in the estate.
@@ -17,22 +19,36 @@
 	let {
 		title,
 		status,
+		open = $bindable(),
 		children,
 	}: {
 		/** Omit for a bare rule: a line break that says nothing more. */
 		title?: string;
 		/** Status badges for the whole section, at the right end of the title rule. Needs `title`. */
 		status?: Snippet;
+		/** Set to make it fold: a twisty after the status closes the body. Needs `title`. */
+		open?: boolean;
 		children: Snippet;
 	} = $props();
+
+	const folds = $derived(title !== undefined && title !== "" && open !== undefined);
 </script>
 
 <section class="kit-section" class:bare={title === undefined}>
 	{#if title}
 		<span class="kit-section-title">
 			{title}
-			{#if status}<span class="kit-section-status">{@render status()}</span>{/if}
+			{#if status || folds}<span class="kit-section-status"
+					>{@render status?.()}{#if folds}<IconButton
+							name="collapse"
+							label={open ? "Fold" : "Unfold"}
+							expanded={open}
+							onclick={() => (open = !open)}
+						/>{/if}</span
+				>{/if}
 		</span>
 	{/if}
-	<div class="kit-section-body">{@render children()}</div>
+	{#if !folds || open}
+		<div class="kit-section-body">{@render children()}</div>
+	{/if}
 </section>

@@ -179,6 +179,21 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
+/* Secondary text after the label (a source, a slot): muted, and the second
+   thing to go when the row narrows, after the kind. */
+.kit-tree-note {
+	flex: 0 1000 auto;
+	min-width: 0;
+	overflow: hidden;
+	color: var(--tool-muted);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+/* a node that is there but not in play: its name drops to muted, the same
+   tone an eye that is off gives it */
+.kit-tree-row.muted .kit-tree-label {
+	color: var(--tool-muted);
+}
 .kit-tree-row:hover .kit-tree-twist,
 .kit-tree-row.is-hover .kit-tree-twist {
 	color: var(--tool-text);

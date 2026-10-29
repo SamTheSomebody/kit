@@ -9,16 +9,18 @@
   },
   "workspaces": [
     "kit",
-    "dock"
+    "dock",
+    "panels"
   ],
   "scripts": {
-    "test": "vitest run kit/terminal/tests dock/tests",
+    "test": "vitest run kit/terminal/tests kit/check/tests kit/components/tests dock/tests",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
+    "svelte": "^5.57.3",
     "vitest": "^4.1.11"
   }
 }
