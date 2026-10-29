@@ -82,6 +82,21 @@
 		onchange?.(next.value);
 	};
 
+	/* A value written from OUTSIDE (a bound store, an undo) moves the track
+	   and the field too. Our own writes already match, so this only acts on
+	   a foreign one, and never mid-edit: what is being typed stays. It does
+	   not call `onchange` — the writer already knows. */
+	$effect.pre(() => {
+		const next = value;
+		if (untrack(() => editing || next === range.value)) {
+			return;
+		}
+		untrack(() => {
+			range = syncSlider(range, next);
+			typed = String(range.value);
+		});
+	});
+
 	/* Typing does NOT grow an elastic track. Halfway through "12000" the
 	   field says 1, then 12, then 120, and growing on each would leave the
 	   range wherever the last keystroke landed. The track pins at its max

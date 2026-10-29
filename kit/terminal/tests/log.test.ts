@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
 	appendEntry,
+	collapseEntries,
 	countByLevel,
+	entryKey,
 	filterEntries,
 	isPinnedToBottom,
 	LOG_LEVELS,
@@ -134,5 +136,33 @@ describe("logText", () => {
 			{ level: "error", text: "boom", at: "01:02:04", source: "a.ts:1" },
 		);
 		expect(logText(entries)).toBe("01:02:04 ERROR boom (×2)  a.ts:1");
+	});
+});
+
+describe("collapseEntries", () => {
+	it("folds every identical line into its first, summing repeats and keeping the latest clock", () => {
+		const entries = build(
+			{ level: "warn", text: "slow", at: "00:00:01" },
+			{ level: "log", text: "tick" },
+			{ level: "warn", text: "slow", at: "00:00:09" },
+			{ level: "warn", text: "slow", at: "00:00:09" },
+		);
+		expect(collapseEntries(entries).map((entry) => [entry.text, entry.repeats, entry.at])).toEqual([
+			["slow", 3, "00:00:09"],
+			["tick", 1, "00:00:00"],
+		]);
+	});
+
+	it("keeps lines from different sources apart", () => {
+		expect(collapseEntries(build({ level: "log", text: "a", source: "x" }, { level: "log", text: "a" }))).toHaveLength(
+			2,
+		);
+	});
+});
+
+describe("entryKey", () => {
+	it("prefers an id and falls back to the sequence", () => {
+		const [first, second] = build({ level: "log", text: "a", id: "issue:1" }, { level: "log", text: "b" });
+		expect([first && entryKey(first), second && entryKey(second)]).toEqual(["issue:1", "2"]);
 	});
 });

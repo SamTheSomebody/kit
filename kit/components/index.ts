@@ -70,8 +70,11 @@ export type { DualRange, SliderRange } from "./slider";
 export { nextSort, sortRows } from "./sort";
 export type { SortDirection, SortState } from "./sort";
 export {
+	ancestorIds,
+	branchIds,
 	branchRows,
 	descendantIds,
+	filterTree,
 	dropSide,
 	foldAll,
 	foldBranch,
@@ -80,8 +83,10 @@ export {
 	markCount,
 	markState,
 	moveNode,
+	nodeCount,
 	rowForKey as treeRowForKey,
 	setMark,
+	treeNodeMatches,
 	visibleRows,
 } from "./tree";
-export type { BranchRow, FoldGesture, MarkState, TreeNode, TreeRow } from "./tree";
+export type { BranchRow, FoldGesture, MarkState, TreeBadge, TreeNode, TreeRow } from "./tree";

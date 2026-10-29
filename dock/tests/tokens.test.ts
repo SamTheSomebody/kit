@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { DOCK_THEME } from '../index.ts';
 import { describe, expect, it } from 'vitest';
 
-const tokens = readFileSync(join(import.meta.dirname, '..', '..', 'kit', 'tokens.css'), 'utf8');
+const tokens = readFileSync(join(import.meta.dirname, '..', '..', 'kit', 'vars.css'), 'utf8');
 
 const declared = (name: string): string => {
   const match = tokens.match(new RegExp(`${name}:\\s*([^;]+);`));
   if (!match?.[1]) {
-    throw new Error(`${name} is not declared in tokens.css`);
+    throw new Error(`${name} is not declared in vars.css`);
   }
   return match[1].trim();
 };
@@ -21,7 +21,7 @@ const declared = (name: string): string => {
    how it presented: keys with no hard edge and fields with no rule, no
    console error, in a gallery that had every other token.
 
-   The root defaults in tokens.css fix it and duplicate DOCK_THEME to do so.
+   The root defaults in vars.css fix it and duplicate DOCK_THEME to do so.
    This is the freeze that stops the two drifting, in the same shape as
    palette.json's. */
 describe('the dock knobs the controls spend', () => {

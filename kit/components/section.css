@@ -70,3 +70,9 @@
   gap: var(--dock-pad);
   min-width: 0;
 }
+
+/* A section inside another's body titles in the muted colour, so depth
+   reads at a glance (promoted from game-editor's FoldSection). */
+.kit-section-body .kit-section-title {
+	color: var(--tool-muted);
+}

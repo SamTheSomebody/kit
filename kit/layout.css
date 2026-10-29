@@ -166,6 +166,12 @@
   align-items: stretch;
 }
 
+/* `wrap="nowrap"` has to beat the recipe's own wrap: same specificity, so
+   it is restated after it rather than left to the generic rule above. */
+.kit-row[data-recipe='toolbar'][data-wrap='nowrap'] {
+  flex-wrap: nowrap;
+}
+
 .kit-column[data-recipe='stack'] > .kit-row[data-recipe='toolbar'][data-wrap='nowrap'] {
   flex-wrap: nowrap;
 }
@@ -243,4 +249,13 @@
   width: auto;
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* `hidden` HAS TO HIDE. Every layout box sets `display`, which beats the UA
+   sheet's `[hidden] { display: none }`, so these come last. The second
+   selector matches the column recipes' child-row rules, which are the most
+   specific display rules in this file. */
+:is(.kit-container, .kit-columns, .kit-column, .kit-row, .kit-slot)[hidden],
+.kit-column[data-recipe] > .kit-row[hidden] {
+  display: none;
 }

@@ -48,6 +48,12 @@ export type LogEntry = {
 	 * an ordinary line; the pane draws the badge from 2 up.
 	 */
 	readonly repeats: number;
+	/** A key that outlives a re-derived list (the selection follows it). Defaults to `seq`. */
+	readonly id?: string;
+	/** More than the line says, shown only for the picked line. */
+	readonly detail?: string;
+	/** A standing line (an open issue) is not the log's to clear: Clear leaves it. */
+	readonly standing?: boolean;
 };
 
 /** What a caller hands in. The pane stamps the sequence and the clock. */
@@ -57,6 +63,9 @@ export type LogInput = {
 	readonly source?: string;
 	/** Defaults to now. Passed in only so a test can pin it. */
 	readonly at?: string;
+	readonly id?: string;
+	readonly detail?: string;
+	readonly standing?: boolean;
 };
 
 export type LogFilter = {
@@ -91,10 +100,7 @@ export const appendEntry = (
 	if (last && last.level === input.level && last.text === input.text && last.source === input.source) {
 		return [...entries.slice(0, -1), { ...last, at, repeats: last.repeats + 1 }];
 	}
-	const appended = [
-		...entries,
-		{ seq: nextSequence, level: input.level, text: input.text, source: input.source, at, repeats: 1 },
-	];
+	const appended = [...entries, { ...input, seq: nextSequence, at, repeats: 1 }];
 	return appended.length > limit ? appended.slice(appended.length - limit) : appended;
 };
 
@@ -119,6 +125,24 @@ export const matchesFilter = (entry: LogEntry, filter: LogFilter): boolean => {
 	}
 	return entry.text.toLowerCase().includes(needle) || (entry.source ?? "").toLowerCase().includes(needle);
 };
+
+/**
+ * Every identical line folded into its first, wherever it fell — the Unity console's Collapse,
+ * as opposed to {@link appendEntry}'s immediate repeats. The count sums and the clock moves to the
+ * latest. It does rewrite the order, which is why it is the reader's choice and not the default.
+ */
+export const collapseEntries = (entries: readonly LogEntry[]): readonly LogEntry[] => {
+	const groups = new Map<string, LogEntry>();
+	for (const entry of entries) {
+		const key = `${entry.level}\u0000${entry.source ?? ""}\u0000${entry.text}`;
+		const group = groups.get(key);
+		groups.set(key, group === undefined ? entry : { ...group, at: entry.at, repeats: group.repeats + entry.repeats });
+	}
+	return [...groups.values()];
+};
+
+/** The key a line is selected and rendered by. */
+export const entryKey = (entry: LogEntry): string => entry.id ?? String(entry.seq);
 
 export const filterEntries = (entries: readonly LogEntry[], filter: LogFilter): readonly LogEntry[] =>
 	entries.filter((entry) => matchesFilter(entry, filter));

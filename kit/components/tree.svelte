@@ -17,6 +17,8 @@
 		type TreeNode,
 	} from "./index.ts";
 
+	import type { Snippet } from "svelte";
+	import Badge from "./badge.svelte";
 	import Checkbox from "./checkbox.svelte";
 	import IconButton from "./iconButton.svelte";
 
@@ -55,6 +57,7 @@
 		disabled = false,
 		onmark,
 		onreorder,
+		trailing,
 	}: {
 		nodes: TreeNode[];
 		expanded?: Set<string>;
@@ -71,6 +74,8 @@
 		disabled?: boolean;
 		onmark?: (marked: Set<string>) => void;
 		onreorder?: (nodes: TreeNode[]) => void;
+		/* the row's own end: a value column, an action. After the kind, before the eye. */
+		trailing?: Snippet<[TreeNode]>;
 	} = $props();
 
 	const rows = $derived(visibleRows(nodes, expanded));
@@ -204,6 +209,7 @@
 			class="kit-tree-row"
 			class:on={selected === row.node.id}
 			class:off={eye && !select && markState(row.node, marked) === "off"}
+			class:muted={row.node.muted}
 			class:disabled={disabled || row.node.disabled}
 			class:dragging={drag?.id === row.node.id}
 			class:dropmark={dropAt?.id === row.node.id && dropAt.side === "before"}
@@ -279,6 +285,10 @@
 				{/if}
 			{:else}
 				<span class="kit-tree-label">{row.node.label}</span>
+				{#if row.node.note}<span class="kit-tree-note">{row.node.note}</span>{/if}
+				{#each row.node.badges ?? [] as badge, index (index)}<Badge text={badge.text} tone={badge.tone} />{/each}
+				{#if row.node.kind && row.node.kind !== row.node.label}<span class="kit-tree-type">{row.node.kind}</span>{/if}
+				{@render trailing?.(row.node)}
 				{#if eye}
 					<IconButton
 						class="kit-tree-eye"

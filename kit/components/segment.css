@@ -61,3 +61,8 @@
 .kit-segment-item:active::before {
 	transform: translateY(calc(-50% - var(--dock-tab-underline)));
 }
+
+/* `hidden` has to hide: `display` above beats the UA `[hidden]` rule. */
+.kit-segment[hidden] {
+	display: none;
+}
