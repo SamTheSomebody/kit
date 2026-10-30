@@ -56,6 +56,9 @@ jobs:
 
       - run: npm install
 
+      # Nothing versions or publishes unless the tests, compile and pack checks pass.
+      - run: npm run verify
+
       - id: select-mode
         uses: changesets/action/select-mode@v2
 
