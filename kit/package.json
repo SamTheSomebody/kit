@@ -47,14 +47,15 @@
     "@xterm/xterm": "^6.0.0"
   },
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "svelte": "^5.28.0"
   },
   "files": [
     "*.ts",
     "*.svelte",
     "*.css",
-    "*.json",
     "components",
+    "!components/tests",
+    "!components/tsconfig.json",
     "fonts",
     "terminal",
     "README.md",

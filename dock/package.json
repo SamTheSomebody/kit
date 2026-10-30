@@ -27,11 +27,12 @@
     "*.css",
     "README.md"
   ],
-  "dependencies": {
-    "@samthesomebody/kit": "^0.3.0"
-  },
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "@samthesomebody/kit": "^0.3.0",
+    "svelte": "^5.28.0"
+  },
+  "devDependencies": {
+    "@samthesomebody/kit": "^0.3.0"
   },
   "publishConfig": {
     "access": "public"
