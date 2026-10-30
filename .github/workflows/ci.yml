@@ -22,5 +22,8 @@ jobs:
         with:
           node-version: '22'
 
+      # npm 10 crashes installing this workspace fresh ("reading 'edgesOut'");
+      # publish.yml installs npm 11 for trusted publishing, so match it.
+      - run: npm install -g npm@^11.5.1
       - run: npm install
       - run: npm run verify
