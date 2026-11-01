@@ -27,11 +27,22 @@ describe("createRegistry", () => {
 		expect(registry.resolve({ type: "number", editor: "number" })?.id).toBe("number");
 	});
 
-	it("replaces by id and undoes a registration", () => {
+	it("replaces by id, and the undo puts the replaced entry back", () => {
 		const registry = make();
 		const undo = registry.register({ id: "number", match: () => 50 });
 		expect(registry.list().filter((entry) => entry.id === "number")).toHaveLength(1);
+		expect(registry.resolve({ type: "other" })?.id).toBe("number");
 		undo();
-		expect(registry.resolve({ type: "number" })?.id).toBe("fallback");
+		expect(registry.list().map((entry) => entry.id)).toEqual(["fallback", "number"]);
+		expect(registry.resolve({ type: "number" })?.id).toBe("number");
+		expect(registry.resolve({ type: "other" })?.id).toBe("fallback");
+	});
+
+	it("undoes a new registration by removing it", () => {
+		const registry = make();
+		const undo = registry.register({ id: "slider", match: () => 99 });
+		undo();
+		undo();
+		expect(registry.list().map((entry) => entry.id)).toEqual(["fallback", "number"]);
 	});
 });

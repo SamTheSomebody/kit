@@ -15,6 +15,7 @@
  * consumer half of that seam — and it is identical in every tool, which is
  * why it lives here rather than in each one.
  */
+import { parseLayout } from './tree';
 import type { DockMenuItem } from './types';
 
 /**
@@ -108,11 +109,11 @@ export const usableLayout = (json: string | undefined): string | undefined => {
   if (json === undefined) {
     return undefined;
   }
-  try {
-    return JSON.stringify(JSON.parse(json)).includes('"leaf":true') ? json : undefined;
-  } catch {
-    return undefined;
-  }
+  /* The dock's own check, not a sniff for `"leaf":true`: a stored layout
+     that only looked usable made the dock refuse it on mount, and the tier
+     below it was never tried. */
+  const layout = parseLayout(json);
+  return layout && (layout.layout !== null || layout.floating.length > 0) ? json : undefined;
 };
 
 /**

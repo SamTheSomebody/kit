@@ -4,7 +4,8 @@
  * entries carry more than an editor keeps its own entry shape on it. No DOM. */
 
 export interface Registry<TTarget, TEntry extends { readonly id: string }> {
-	/** Adds an entry, or replaces the one with its id. Returns the undo. */
+	/** Adds an entry, or replaces the one with its id. Returns the undo, which
+	 *  puts back the entry it replaced (a built-in, say) if there was one. */
 	register(entry: TEntry): () => void;
 	resolve(target: TTarget): TEntry | undefined;
 	list(): readonly TEntry[];
@@ -30,11 +31,14 @@ export const createRegistry = <
 		register: (entry) => {
 			seed();
 			const existing = entries.findIndex((candidate) => candidate.id === entry.id);
-			if (existing !== -1) entries.splice(existing, 1);
+			const replaced = existing === -1 ? undefined : entries.splice(existing, 1)[0];
 			entries.push(entry);
 			return () => {
 				const index = entries.indexOf(entry);
-				if (index !== -1) entries.splice(index, 1);
+				if (index === -1) return;
+				entries.splice(index, 1);
+				// Back where it was, so ties between equal matches resolve as before.
+				if (replaced !== undefined) entries.splice(Math.min(existing, entries.length), 0, replaced);
 			};
 		},
 		resolve: (target) => {

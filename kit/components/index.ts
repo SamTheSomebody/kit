@@ -32,6 +32,7 @@ export { bindToggle, crossedTo, paints, stroke } from "./paint";
 export type { PressGesture, Stroke, ToggleTarget } from "./paint";
 export {
 	hasTicks,
+	hintParts,
 	isRule,
 	isTypingTarget,
 	placeMenu,

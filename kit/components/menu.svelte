@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { hasTicks, isRule, placeMenu, placeSubmenu, menuRowForKey, type MenuItem } from "./index.ts";
+	import { hasTicks, hintParts, isRule, placeMenu, placeSubmenu, menuRowForKey, type MenuItem } from "./index.ts";
 
 	import "./menu.css";
 
@@ -143,7 +143,12 @@
 						<span class="kit-menu-tick">{item.tick ? "✓" : ""}</span>
 					{/if}
 					{item.label}
-					{#if item.hint}<span class="kit-menu-hint">{@html item.hint}</span>{/if}
+					{#if item.hint !== undefined && item.hint.length > 0}
+						{@const hint = hintParts(item.hint)}
+						<span class="kit-menu-hint"
+							>{#if "keys" in hint}{#each hint.keys as key, index (index)}<kbd>{key}</kbd>{/each}{:else}{hint.text}{/if}</span
+						>
+					{/if}
 					{#if item.submenu}<span class="kit-menu-caret">▸</span>{/if}
 				</button>
 			{/if}

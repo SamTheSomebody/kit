@@ -112,31 +112,100 @@ const splitAxisOf = (value: unknown): "row" | "col" | null => {
 	return null;
 };
 
-const normalizeNode = (node: DockNode): boolean => {
-	if ("leaf" in node && node.leaf) {
-		return true;
-	}
-	if (!("a" in node) || !("b" in node)) {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isFiniteNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+
+/* Checks one node of a parsed layout and repairs what has one safe reading:
+   a split ratio outside (0, 1) becomes even, a tab already placed elsewhere
+   (or not a string) is dropped, `active` falls back to the first tab. */
+const normalizeNode = (node: unknown, leafIds: Set<string>, tabs: Set<string>): node is DockNode => {
+	if (!isRecord(node)) {
 		return false;
+	}
+	if (node.leaf === true) {
+		if (typeof node.id !== "string" || leafIds.has(node.id) || !Array.isArray(node.tabs)) {
+			return false;
+		}
+		leafIds.add(node.id);
+		node.tabs = node.tabs.filter((tab): tab is string => {
+			if (typeof tab !== "string" || tabs.has(tab)) {
+				return false;
+			}
+			tabs.add(tab);
+			return true;
+		});
+		const kept = node.tabs as string[];
+		if (typeof node.active !== "string" || !kept.includes(node.active)) {
+			node.active = kept[0] ?? null;
+		}
+		if (node.collapsed !== undefined && node.collapsed !== false && !isFiniteNumber(node.collapsed)) {
+			node.collapsed = false;
+		}
+		return true;
 	}
 	const axis = splitAxisOf(node.split);
 	if (!axis) {
 		return false;
 	}
 	node.split = axis;
-	return normalizeNode(node.a) && normalizeNode(node.b);
+	if (!isFiniteNumber(node.ratio) || node.ratio <= 0 || node.ratio >= 1) {
+		node.ratio = 0.5;
+	}
+	return normalizeNode(node.a, leafIds, tabs) && normalizeNode(node.b, leafIds, tabs);
 };
 
-const normalizeSerialized = (next: DockSerialized): boolean => {
-	if (next.layout !== null && next.layout !== undefined && !normalizeNode(next.layout)) {
-		return false;
+const normalizeFloat = (float: unknown, leafIds: Set<string>, tabs: Set<string>): float is DockFloat =>
+	isRecord(float) &&
+	typeof float.id === "string" &&
+	[float.x, float.y, float.w, float.h, float.z].every(isFiniteNumber) &&
+	normalizeNode(float.root, leafIds, tabs);
+
+/**
+ * A serialized layout as the dock can draw it, or `undefined` when it can't:
+ * not JSON, not the envelope, or a tree with a node that is neither a leaf
+ * nor a split. A stored layout outlives the code that wrote it and can be
+ * edited by hand, so nothing past this point trusts its shape.
+ */
+export const parseLayout = (json: string): DockSerialized | undefined => {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(json);
+	} catch {
+		return undefined;
 	}
-	for (const float of next.floating ?? []) {
-		if (!normalizeNode(float.root)) {
-			return false;
-		}
+	if (!isRecord(parsed)) {
+		return undefined;
 	}
-	return true;
+	const leafIds = new Set<string>();
+	const tabs = new Set<string>();
+	if (parsed.layout === undefined) {
+		parsed.layout = null;
+	}
+	if (parsed.layout !== null && !normalizeNode(parsed.layout, leafIds, tabs)) {
+		return undefined;
+	}
+	if (parsed.floating === undefined) {
+		parsed.floating = [];
+	}
+	if (!Array.isArray(parsed.floating) || !parsed.floating.every((float) => normalizeFloat(float, leafIds, tabs))) {
+		return undefined;
+	}
+	if (!isFiniteNumber(parsed.v)) {
+		parsed.v = 1;
+	}
+	return parsed as DockSerialized;
+};
+
+/** Float z as consecutive ranks above `base`, keeping their order. */
+export const restackFloats = (floating: readonly DockFloat[], base: number): number => {
+	[...floating]
+		.sort((first, second) => first.z - second.z)
+		.forEach((float, index) => {
+			float.z = base + index + 1;
+		});
+	return base + floating.length;
 };
 
 /** `collapsed` is the collapse sequence № — reopeners pick the max. */
@@ -172,7 +241,8 @@ export type DockCore = {
 	floatAt(node: DockNode, x: number, y: number, w: number, h: number): void;
 	raiseFloat(float: DockFloat): boolean;
 	serialize(): string;
-	hydrate(json: string, known?: (id: string) => boolean): void;
+	/** False (and the layout unchanged) when `json` is not a layout. */
+	hydrate(json: string, known?: (id: string) => boolean): boolean;
 	takeDrag(drag: DockDragPayload, target?: DockLeaf, mintTab?: MintTab): TakenPayload;
 	dropOnStrip(leaf: DockLeaf, index: number, drag: DockDragPayload, mintTab?: MintTab): boolean;
 	dropOnBody(leaf: DockLeaf, zone: DockZone, drag: DockDragPayload, mintTab?: MintTab): boolean;
@@ -410,9 +480,10 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 			y: Math.round(y),
 			w,
 			h,
-			z: ++topZ,
+			z: Number.POSITIVE_INFINITY,
 			root: node,
 		});
+		topZ = restackFloats(state.floating, floatBaseZ);
 	};
 
 	/** Bring a float to the front; false if it already is. */
@@ -420,7 +491,11 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 		if (float.z === topZ) {
 			return false;
 		}
-		float.z = ++topZ;
+		/* Re-rank rather than count up: z is saved with the layout, and a
+		   count that only grows ends up above the drop preview and the
+		   context menu, which sit at fixed z over the floats. */
+		float.z = Number.POSITIVE_INFINITY;
+		topZ = restackFloats(state.floating, floatBaseZ);
 		mark("zmove");
 		return true;
 	};
@@ -436,11 +511,11 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 	 * nothing), and a leaf whose tabs all died holds space showing nothing.
 	 * Every consumer that persists would otherwise write this same walk.
 	 */
-	const hydrate = (json: string, known?: (id: string) => boolean): void => {
-		const next = JSON.parse(json) as DockSerialized;
-		if (!normalizeSerialized(next)) {
-			notify("layout ignored — invalid split");
-			return;
+	const hydrate = (json: string, known?: (id: string) => boolean): boolean => {
+		const next = parseLayout(json);
+		if (!next) {
+			notify("layout ignored — unreadable");
+			return false;
 		}
 		state = next;
 		if (known) {
@@ -460,10 +535,9 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 			if (sequence > floatSequence) {
 				floatSequence = sequence;
 			}
-			if (float.z > topZ) {
-				topZ = float.z;
-			}
 		});
+		topZ = restackFloats(state.floating, floatBaseZ);
+		return true;
 	};
 
 	/* Resolve the drag into a payload, pulling it from the source.
