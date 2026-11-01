@@ -240,7 +240,9 @@ export type DockHandle = {
 	 */
 	commands: readonly Command[];
 	serialize(): string;
-	hydrate(json: string): void;
+	/** Draw a serialized layout. False, and nothing changes, when `json` is
+	 *  not a layout the dock can draw. */
+	hydrate(json: string): boolean;
 	openTab(id: string, options?: DockOpenOptions): void;
 	closeTab(id: string): void;
 	destroy(): void;

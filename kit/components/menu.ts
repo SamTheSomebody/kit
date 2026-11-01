@@ -13,8 +13,10 @@ export type MenuItem =
 	| {
 			rule?: false;
 			label: string;
-			/* a hint is markup — a `kbd` per key, a gesture its own element */
-			hint?: string;
+			/* the accelerator: its keys, each drawn in a `kbd` (`commandHint`
+			   gives them); or a string, read as keys when it is only `<kbd>`
+			   runs and shown as text otherwise — never parsed as HTML */
+			hint?: string | readonly string[];
 			tick?: boolean;
 			on?: boolean;
 			disabled?: boolean;
@@ -23,6 +25,16 @@ export type MenuItem =
 	  };
 
 export type MenuRow = Exclude<MenuItem, { rule: true }>;
+
+const ENTITIES: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
+const KBD_RUN = /<kbd>([^<]*)<\/kbd>/g;
+
+/** A row's hint as drawn: keys (one `kbd` each) or plain text. See {@link MenuItem}. */
+export const hintParts = (hint: string | readonly string[]): { readonly keys: readonly string[] } | { readonly text: string } => {
+	if (typeof hint !== "string") return { keys: hint };
+	const keys = [...hint.matchAll(KBD_RUN)].map((run) => (run[1] ?? "").replace(/&(amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity] ?? entity));
+	return keys.length > 0 && hint.replace(KBD_RUN, "").trim() === "" ? { keys } : { text: hint };
+};
 
 export const isRule = (item: MenuItem): item is { rule: true } => "rule" in item && item.rule === true;
 

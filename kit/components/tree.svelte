@@ -266,7 +266,7 @@
 					class="kit-tree-twist"
 					class:leaf={row.leaf}
 					aria-expanded={row.leaf ? undefined : expanded.has(row.node.id)}
-					aria-label={row.leaf ? "" : "Expand {row.node.label}"}
+					aria-label={row.leaf ? undefined : `${expanded.has(row.node.id) ? "Collapse" : "Expand"} ${row.node.label}`}
 					tabindex={-1}
 					onclick={() => !row.leaf && toggleTwist(row.node.id)}>▾</button
 				>

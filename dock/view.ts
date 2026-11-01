@@ -58,7 +58,7 @@ type DropWiring = {
 
 type DockAutomation = {
 	serialize(): string;
-	hydrate(json: string): void;
+	hydrate(json: string): boolean;
 	state(): unknown;
 	openTab(id: string, options?: DockOpenOptions): void;
 	closeTab(id: string): void;
@@ -81,6 +81,11 @@ export const insertOffset = (tabs: ArrayLike<TabOffset>, index: number, fallback
 export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => {
 	stage.classList.add("dock-stage");
 	applyDockTheme(stage);
+
+	/* Everything this dock listens to on the stage, the document or the
+	   window goes away with it: `destroy` aborts this. */
+	const lifetime = new AbortController();
+	const listening = { signal: lifetime.signal };
 
 	const emitChange = (): void => ports.on?.change?.(core.serialize());
 	/* Every restore is pruned against the registry — a stored layout outlives
@@ -105,14 +110,50 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 	const dividerNodes = new WeakMap<Element, DockSplit>();
 
 	/* consumer content mounted this render — torn down before the next */
-	let mountedTabs: DockTabDef[] = [];
+	let mountedTabs: { id: string; def: DockTabDef; content: HTMLElement }[] = [];
+	/* Scroll offsets held across a re-render. Every render rebuilds each
+	   `.dock-content` and re-parents the content into it, and both lose
+	   their scroll: clicking a tab in one pane used to throw every other pane
+	   back to the top. The pane box is new, so it is remembered by tab id;
+	   the content's own scrollers are the same nodes, so by element. */
+	let paneScroll = new Map<string, { top: number; left: number }>();
+	let innerScroll: { element: Element; top: number; left: number }[] = [];
+	const rememberScroll = (): void => {
+		paneScroll = new Map();
+		innerScroll = [];
+		for (const { id, content } of mountedTabs) {
+			paneScroll.set(id, { top: content.scrollTop, left: content.scrollLeft });
+			for (const element of content.querySelectorAll("*")) {
+				if (element.scrollTop !== 0 || element.scrollLeft !== 0) {
+					innerScroll.push({ element, top: element.scrollTop, left: element.scrollLeft });
+				}
+			}
+		}
+	};
+	const restoreScroll = (): void => {
+		for (const { id, content } of mountedTabs) {
+			const pane = paneScroll.get(id);
+			if (pane) {
+				content.scrollTop = pane.top;
+				content.scrollLeft = pane.left;
+			}
+		}
+		for (const { element, top, left } of innerScroll) {
+			if (element.isConnected) {
+				element.scrollTop = top;
+				element.scrollLeft = left;
+			}
+		}
+		paneScroll = new Map();
+		innerScroll = [];
+	};
 	/* one drawn rail per pane body this render — same lifetime as the content
 	   it measures, and unbound with it: the rail listens on the window, so a
 	   render that dropped its element without this would leak a listener per
 	   pane per render */
 	let mountedRails: BoundScroll[] = [];
 	const unmountContent = (): void => {
-		for (const def of mountedTabs) {
+		for (const { def } of mountedTabs) {
 			def.destroy?.();
 		}
 		mountedTabs = [];
@@ -131,6 +172,18 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		document.body.classList.remove("tab-drag");
 		stage.querySelectorAll(".dragging").forEach((tab) => tab.classList.remove("dragging"));
 	};
+
+	/* A foreign drag takes the divider shield in `dragOf`, but the dock
+	   only hears its end when it drops here. Dropped elsewhere, cancelled,
+	   or carried out of the window, it would leave every divider dead. */
+	const endForeignDrag = (event: DragEvent): void => {
+		if (DRAG === null && (event.type !== "dragleave" || event.relatedTarget === null)) {
+			document.body.classList.remove("tab-drag");
+		}
+	};
+	for (const type of ["drop", "dragend", "dragleave"]) {
+		window.addEventListener(type, endForeignDrag as EventListener, { capture: true, signal: lifetime.signal });
+	}
 
 	/** The in-flight payload: an internal drag, or a foreign one the
 	 *  consumer's external port accepts. */
@@ -460,7 +513,7 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 			pointedLeafId = leaf.dataset.leaf;
 		}
 	};
-	stage.addEventListener("pointerover", onPointerOver);
+	stage.addEventListener("pointerover", onPointerOver, listening);
 
 	const commandLeaf = (): DockLeaf | null =>
 		leafOfElement(stage.ownerDocument.activeElement) ?? (pointedLeafId ? core.findLeaf(pointedLeafId) : null);
@@ -672,11 +725,12 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		}
 		event.preventDefault();
 		openDockMenu(stage, menuItemsFor(event), event.clientX, event.clientY);
-	});
+	}, listening);
 
 	/* ══ render ═════════════════════════════════════════════════════════ */
 
 	const rerender = (): void => {
+		rememberScroll();
 		unmountContent();
 		rootElement.innerHTML = "";
 		if (!core.state.layout) {
@@ -689,12 +743,13 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		} else {
 			rootElement.append(renderNode(core.state.layout));
 		}
-		stage.querySelectorAll(".dock-float").forEach((float) => float.remove());
+		stage.querySelectorAll(":scope > .dock-float").forEach((float) => float.remove());
 		core.state.floating.forEach(renderFloat);
 		stage.querySelectorAll<HTMLElement>(".dock-tabstrip,.dock-group.col").forEach((strip) => {
 			centerActive(strip);
 			updateSpill(strip);
 		});
+		restoreScroll();
 		emitChange();
 	};
 
@@ -955,13 +1010,14 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		body.className = "dock-body";
 		const content = document.createElement("div");
 		content.className = "dock-content";
-		const active = node.active === null ? undefined : ports.tabs.get(node.active);
-		if (active) {
+		const activeId = node.active;
+		const active = activeId === null ? undefined : ports.tabs.get(activeId);
+		if (activeId !== null && active) {
 			if (active.fit) {
 				content.dataset.fit = active.fit;
 			}
 			active.render(content);
-			mountedTabs.push(active);
+			mountedTabs.push({ id: activeId, def: active, content });
 		}
 		body.append(content);
 		/* THE TAB PANE WEARS THE KIT'S RAIL. A tab's content is the estate's
@@ -1404,17 +1460,20 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		commands,
 		serialize: () => core.serialize(),
 		hydrate: (json) => {
-			core.hydrate(json, knownTab);
-			rerender();
+			const applied = core.hydrate(json, knownTab);
+			if (applied) {
+				rerender();
+			}
+			return applied;
 		},
 		openTab,
 		closeTab,
 		destroy: () => {
 			closeDockMenu();
 			unbindKeymap();
-			stage.removeEventListener("pointerover", onPointerOver);
+			lifetime.abort();
 			unmountContent();
-			stage.querySelectorAll(".dock-float").forEach((float) => float.remove());
+			stage.querySelectorAll(":scope > .dock-float").forEach((float) => float.remove());
 			rootElement.remove();
 			preview.remove();
 			insertBar.remove();

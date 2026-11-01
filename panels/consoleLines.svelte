@@ -69,7 +69,7 @@
 		</p>
 	{:else}
 		<ol class="log-lines">
-			{#each context.shown as entry (entryKey(entry))}
+			{#each context.shown as entry (entry.seq)}
 				{@const pick = context.pick}
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex (the role is "button" whenever it is focusable) -->
 				<li

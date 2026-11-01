@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from "svelte";
+	import { untrack, type Snippet } from "svelte";
 
 	import Container from "@samthesomebody/kit/container.svelte";
 	import Slot from "@samthesomebody/kit/slot.svelte";
@@ -50,8 +50,7 @@
 
 	const storageKey = (): string | undefined => (persist === undefined ? undefined : `kit-hierarchy:${persist}`);
 
-	const load = (): Set<string> | undefined => {
-		const key = storageKey();
+	const load = (key: string | undefined): Set<string> | undefined => {
 		if (key === undefined) return undefined;
 		try {
 			const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "null");
@@ -61,8 +60,7 @@
 		}
 	};
 
-	const save = (open: Set<string>): void => {
-		const key = storageKey();
+	const save = (key: string | undefined, open: Set<string>): void => {
 		if (key === undefined) return;
 		try {
 			localStorage.setItem(key, JSON.stringify([...open]));
@@ -75,8 +73,24 @@
 	const needle = $derived(query.trim().toLowerCase());
 	const shown = $derived(filterTree(nodes, needle));
 
-	let open = $state<Set<string>>(load() ?? new Set());
-	let seeded = $state(load() !== undefined);
+	/* What is open belongs to one `persist` key: a new key loads its own
+	   folds before anything saves, so one scene's folds never land under
+	   another's. Nothing saved yet ("seeded" false) opens the top level once
+	   there are nodes; only then is there anything worth saving. */
+	let loadedKey = storageKey();
+	const initial = load(loadedKey);
+	let open = $state<Set<string>>(initial ?? new Set());
+	let seeded = $state(initial !== undefined);
+
+	$effect.pre(() => {
+		const key = storageKey();
+		if (key === loadedKey) return;
+		loadedKey = key;
+		const saved = load(key);
+		open = saved ?? new Set();
+		seeded = saved !== undefined;
+	});
+
 	$effect(() => {
 		if (seeded || nodes.length === 0) return;
 		seeded = true;
@@ -87,14 +101,27 @@
 	   when the filter clears, untouched. */
 	const expanded = $derived(needle === "" ? open : new Set(branchIds(shown)));
 
+	/* A new selection opens the branches above it, once: folding one of them
+	   afterwards stays folded, and edits that rebuild `nodes` don't reopen it.
+	   A selection not in the tree yet is retried when the nodes arrive. */
+	let revealed: string | undefined;
 	$effect(() => {
-		if (selected === undefined) return;
-		const shut = (ancestorIds(nodes, selected) ?? []).filter((id) => !open.has(id));
-		if (shut.length > 0) open = new Set([...open, ...shut]);
+		if (selected === undefined) {
+			revealed = undefined;
+			return;
+		}
+		if (selected === revealed) return;
+		const ancestors = ancestorIds(nodes, selected);
+		if (ancestors === undefined) return;
+		revealed = selected;
+		untrack(() => {
+			const shut = ancestors.filter((id) => !open.has(id));
+			if (shut.length > 0) open = new Set([...open, ...shut]);
+		});
 	});
 
 	$effect(() => {
-		save(open);
+		if (seeded) save(storageKey(), open);
 	});
 </script>
 
