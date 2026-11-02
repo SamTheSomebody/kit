@@ -1,6 +1,6 @@
 {
   "name": "@samthesomebody/dock",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Tool chrome shell: splits, tabs, floats. Depends on @samthesomebody/kit (controls). Kit does not depend on dock.",
   "type": "module",
   "svelte": "./index.ts",
@@ -28,11 +28,11 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@samthesomebody/kit": "^0.3.0",
+    "@samthesomebody/kit": "^0.3.1",
     "svelte": "^5.28.0"
   },
   "devDependencies": {
-    "@samthesomebody/kit": "^0.3.0"
+    "@samthesomebody/kit": "^0.3.1"
   },
   "publishConfig": {
     "access": "public"
