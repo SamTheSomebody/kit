@@ -3,6 +3,7 @@
 "@samthesomebody/panels": minor
 ---
 
+- **dock:** no longer ships `compareStage.css` or `timelineSheet.css`. They were one consumer's stylesheets (game-mono's editorUi), which now keeps its own copies.
 - **dock:** `window.__DOCK__` is now opt-in. Set `ports.automation: true` (or `automation` on the Svelte `Dock`) to expose serialize, hydrate, state, openTab and closeTab for agent panes and scripted checks. It used to be installed for every dock, in production too, and the last dock made won.
 - **panels, Console:**
   - lines can have a tool's own levels
