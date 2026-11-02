@@ -86,10 +86,11 @@ export {
 	nodeCount,
 	rowForKey as treeRowForKey,
 	setMark,
+	toggleSolo,
 	treeNodeMatches,
 	visibleRows,
 } from "./tree";
-export type { BranchRow, FoldGesture, MarkState, TreeBadge, TreeNode, TreeRow } from "./tree";
+export type { BranchRow, FoldGesture, MarkSolo, MarkState, TreeBadge, TreeNode, TreeRow } from "./tree";
 export {
 	expireNotifications,
 	nextNotificationDeadline,

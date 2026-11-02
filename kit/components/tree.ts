@@ -237,6 +237,34 @@ export const setMark = (marked: ReadonlySet<string>, node: TreeNode, on: boolean
 	return next;
 };
 
+/** An Alt-click solo in force: the node, the marks it left on, and the marks from before it. */
+export type MarkSolo = {
+	readonly id: string;
+	readonly only: ReadonlySet<string>;
+	readonly before: ReadonlySet<string>;
+};
+
+const sameMarks = (a: ReadonlySet<string>, b: ReadonlySet<string>): boolean =>
+	a.size === b.size && [...a].every((id) => b.has(id));
+
+/* ALT-CLICK SOLOS, the way Photoshop's eye does: only this node's leaves stay
+   marked. Alt-clicking the same eye again, while nothing else changed, puts
+   back the marks from before; soloing another node straight after keeps
+   those same marks to go back to, rather than the first solo's. Any other
+   edit to the marks ends the solo where it stands. */
+export const toggleSolo = (
+	marked: ReadonlySet<string>,
+	node: TreeNode,
+	solo: MarkSolo | undefined,
+): { marked: Set<string>; solo: MarkSolo | undefined } => {
+	const standing = solo !== undefined && sameMarks(marked, solo.only) ? solo : undefined;
+	if (standing?.id === node.id) {
+		return { marked: new Set(standing.before), solo: undefined };
+	}
+	const only = new Set(leafIds(node));
+	return { marked: new Set(only), solo: { id: node.id, only, before: standing?.before ?? new Set(marked) } };
+};
+
 /* Which side of a row a drop lands on. Height-aware: the half of the row the
    pointer is in decides, and it is the only way to reach the END of a list,
    where there is no next row to go before. */

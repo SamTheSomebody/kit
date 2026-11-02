@@ -229,6 +229,12 @@
 	margin-inline-start: auto;
 	padding-inline-start: var(--dock-pad-tight);
 }
+/* The type (or count) already took the slack: the eye follows it, so the
+   type stays flush right of the row rather than splitting the gap. */
+.kit-tree-type ~ .kit-tree-eye,
+.kit-tree-count ~ .kit-tree-eye {
+	margin-inline-start: 0;
+}
 /* ── 25 · tree reorder ───────────────────────────────────────────────
    `.dock-insert`'s device: a 2px accent bar where the row will land. WHICH
    EDGE depends on the pointer, not on the row: past the target's midpoint
