@@ -82,6 +82,11 @@ describe("countByLevel", () => {
 		expect(countByLevel(entries)).toMatchObject({ error: 1, warn: 1, log: 0 });
 	});
 
+	it("counts a tool's own level next to the built-ins", () => {
+		const entries = build({ level: "success", text: "saved" }, { level: "success", text: "built" }, { level: "info", text: "hi" });
+		expect(countByLevel(entries)).toEqual({ log: 0, info: 1, warn: 0, error: 0, debug: 0, success: 2 });
+	});
+
 	it("answers for every level, including the ones with nothing in them", () => {
 		expect(Object.keys(countByLevel([])).sort()).toEqual([...LOG_LEVELS].sort());
 	});

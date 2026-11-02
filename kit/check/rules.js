@@ -18,7 +18,35 @@ export const RULES = /** @type {const} */ ({
 
 /** @typedef {keyof typeof RULES} Rule */
 
-const COLOR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|color-mix)\(/i;
+const COLOR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color-mix|color)\(/i;
+
+/* CSS named colours. Only looked for in properties that take a colour, so a
+   word like "tomato" in a font or animation name is not one. `transparent`
+   and `currentColor` are not here: they are not palette choices. */
+const NAMED_COLOR = new RegExp(
+	`(?:^|[\\s,(])(?:${[
+		"aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood",
+		"cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray",
+		"darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen",
+		"darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue",
+		"firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew",
+		"hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan",
+		"lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray",
+		"lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue",
+		"mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred",
+		"midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid",
+		"palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple",
+		"rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue",
+		"slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white",
+		"whitesmoke yellow yellowgreen",
+	]
+		.join(" ")
+		.split(" ")
+		.join("|")})(?=$|[\\s,)])`,
+	"i",
+);
+const COLOR_PROPERTY =
+	/^(?:color|background(?:-color)?|border(?:-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)?(?:-color)?|outline(?:-color)?|fill|stroke|box-shadow|text-shadow|caret-color|accent-color|text-decoration(?:-color)?|column-rule(?:-color)?|scrollbar-color)$/;
 const STRUCTURE_PREFIXES = ["margin", "padding", "flex", "grid", "place-", "justify-"];
 const STRUCTURE_PROPERTIES = new Set([
 	"gap",
@@ -73,7 +101,9 @@ export const checkDeclaration = (declaration) => {
 	/** @type {Finding[]} */
 	const findings = [];
 	if (property.startsWith("--")) return findings;
-	if (COLOR.test(value)) findings.push(...finding("color", declaration, `${property}: ${value}`));
+	if (COLOR.test(value) || (COLOR_PROPERTY.test(property) && NAMED_COLOR.test(value))) {
+		findings.push(...finding("color", declaration, `${property}: ${value}`));
+	}
 	const structural =
 		STRUCTURE_PROPERTIES.has(property) ||
 		STRUCTURE_PREFIXES.some((prefix) => property.startsWith(prefix)) ||
@@ -82,7 +112,8 @@ export const checkDeclaration = (declaration) => {
 	const offScale =
 		(property === "font-size" && !value.startsWith("var(--tool-font-size-") && value !== "inherit") ||
 		(property === "font-family" && value !== "var(--tool-font)" && value !== "inherit") ||
-		(property === "text-transform" && value === "uppercase");
+		(property === "font" && value !== "inherit") ||
+		(property === "text-transform" && value.toLowerCase() === "uppercase");
 	if (offScale) findings.push(...finding("type", declaration, `${property}: ${value}`));
 	if (property.endsWith("radius") && !/^0(?:px)?$/.test(value)) {
 		findings.push(...finding("radius", declaration, `${property}: ${value}`));

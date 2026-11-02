@@ -4,13 +4,15 @@ Tool chrome **layout** (pane structure recipes) + **controls** (Svelte component
 
 Optional shell: [`@samthesomebody/dock`](./dock) — splits/tabs/floats. Depends on this package; this package does **not** depend on dock. forge rail / spine stages are peer shells.
 
-Layout in this repo: `kit/` (`@samthesomebody/kit`) and `dock/` (`@samthesomebody/dock`) as npm workspaces.
+Layout in this repo: `kit/` (`@samthesomebody/kit`), `dock/` (`@samthesomebody/dock`) and `panels/` (`@samthesomebody/panels`: Console, Hierarchy, Inspector) as npm workspaces. `npm run verify` runs the tests, compiles every component on the oldest supported Svelte, and checks what each package would publish.
+
+The kit was born in game-mono. Source comments that cite `docs/specs/…`, `tools/…` or `play/…` refer to that repository's history, not to paths here.
 
 ## Install
 
 ```bash
 npm install @samthesomebody/kit
-# peer: svelte ^5
+# peer: svelte ^5.28
 
 # optional shell
 npm install @samthesomebody/dock

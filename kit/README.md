@@ -82,6 +82,23 @@ A section's status (a check, a measurement, a warning) goes in `Section`'s `stat
 
 `status` needs a `title`; an untitled section is a bare rule and drops it.
 
+### Entry points
+
+Import components by their `.svelte` path, as above. Logic comes from an entry point, never from a deep `.ts` file:
+
+| Import | What |
+|---|---|
+| `@samthesomebody/kit` | layout recipes (`createRow`, …) |
+| `@samthesomebody/kit/components` | control logic: keymap, menu, scroll, scrub, slider, tree, `createRegistry`, and the editor/property types. No Svelte, no CSS, safe in a game build. |
+| `@samthesomebody/kit/editors` | the type-editor registry (`editors`, `defineEditor`) and its types |
+| `@samthesomebody/kit/tooltip` | the `tooltip` action |
+| `@samthesomebody/kit/terminal/core` | the log model, link matcher and port types, without xterm |
+| `@samthesomebody/kit/terminal` | all of the above plus the VT and log panes |
+
+Deep `.ts` paths (`@samthesomebody/kit/components/editors.ts`, `…/terminal/log.ts`) still resolve in 0.4 but are deprecated and will be removed in 0.5.
+
+The code ships as TypeScript source, so a consumer needs a TS-aware bundler (Vite, SvelteKit) with `moduleResolution: "bundler"`.
+
 ## Terminal (optional)
 
 VT + log panes. Subpath only — root kit index does **not** pull xterm or terminal CSS.

@@ -17,7 +17,7 @@
 
 import type { Component } from "svelte";
 
-import { createRegistry, type Registry } from "./registry.ts";
+import { createRegistry, type Registry } from "./registry";
 
 import BooleanEditor from "./booleanEditor.svelte";
 import ColorEditor from "./colorEditor.svelte";

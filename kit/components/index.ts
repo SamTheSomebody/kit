@@ -1,14 +1,11 @@
-/* THE CONTROL KIT'S CORE — the rules every control is made of, and the CSS
- * that draws them. Framework-free by design, exactly as `dock` and `terminal`
- * are: the Svelte components live in `tools/ui/components/` and the games' DEV
- * panels use the same rules and the same stylesheets without either of them
- * importing across the tools boundary (`checkLayers`).
+/* THE CONTROL KIT'S CORE: the rules every control is made of, apart from
+ * the markup that draws them. Framework-free and CSS-free by design, so a
+ * plain-DOM panel (a game's dev overlay, a dock tab mounted by hand) can use
+ * the same rules as the Svelte components without loading either.
  *
- * Contract: docs/specs/2026-09-04-control-kit-design.md.
- * The signed artifact is frozen at tools/ui/fidelity/reference.html.
- *
- * Every rule here had a bug in the artifact that a unit test would have
- * caught, which is why they are separated from the markup at all.
+ * Every rule here had a bug in the original artifact that a unit test would
+ * have caught, which is why they are separated from the markup at all.
+ * Design history: game-mono `docs/specs/2026-09-04-control-kit-design.md`.
  */
 
 /* THE STYLESHEET IS NOT IMPORTED HERE, and that is deliberate as of
@@ -17,8 +14,8 @@
    — measured on a clean king-of-gods production build, where importing one
    constant from here took the game's CSS from 17,928 to 46,452 bytes, because
    a side-effect import is one Rollup will not drop however unused the bindings
-   are. `play/layoutPanel` and `play/timelinePanel` are exactly that case: plain-DOM DEV panels reached
-   statically from `play/layout`, which every game imports.
+   are. A game's plain-DOM dev panels are exactly that case: reached
+   statically from code every game imports.
 
    So the rules are importable on their own and a consumer that wants the
    drawing asks for it: `import "./index.css"`. The kit's own Svelte
@@ -93,3 +90,20 @@ export {
 	visibleRows,
 } from "./tree";
 export type { BranchRow, FoldGesture, MarkState, TreeBadge, TreeNode, TreeRow } from "./tree";
+export { createRegistry } from "./registry";
+export type { Registry } from "./registry";
+/* Types only: the registry of editors itself imports the editor components,
+ * so it has its own entry, `@samthesomebody/kit/editors`, and this index
+ * stays free of Svelte and CSS. */
+export type {
+	BooleanProperty,
+	BuiltInProperty,
+	ColorProperty,
+	EditorDefinition,
+	EditorProps,
+	EnumProperty,
+	NumberProperty,
+	Property,
+	StringProperty,
+	VectorProperty,
+} from "./editors";

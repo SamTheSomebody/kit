@@ -52,6 +52,7 @@
 		external,
 		menu,
 		keymap,
+		automation = false,
 		fill = true,
 		handle = $bindable(),
 	}: {
@@ -73,6 +74,8 @@
 		 *  this is the whole binding surface, and the menu row that teaches a
 		 *  shortcut re-labels itself from it. */
 		keymap?: Keymap;
+		/** Expose the dock as `window.__DOCK__` for agent panes and scripted checks. */
+		automation?: boolean;
 		/** Bind to reach `serialize` / `hydrate` / `openTab` / `closeTab`. */
 		handle?: DockHandle;
 	} = $props();
@@ -162,6 +165,7 @@
 				external,
 				menu,
 				keymap,
+				automation,
 			}),
 		);
 		handle = dock;

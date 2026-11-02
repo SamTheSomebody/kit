@@ -1496,7 +1496,9 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		openTab,
 		closeTab,
 	};
-	(window as { __DOCK__?: DockAutomation }).__DOCK__ = automation;
+	if (ports.automation === true) {
+		(window as { __DOCK__?: DockAutomation }).__DOCK__ = automation;
+	}
 
 	if (ports.state) {
 		core.hydrate(ports.state, knownTab);

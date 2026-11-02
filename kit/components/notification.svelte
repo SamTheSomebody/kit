@@ -103,7 +103,7 @@
 		     already on, so nothing shifts and no gutter is held open for
 		     something usually absent. -->
 		<button type="button" class="kit-note" data-dev="notification" title="Dismiss" onclick={() => dismiss(entry.id)}>
-			<span class="dock-tab-dot" data-status={entry.severity === "error" ? "danger" : "ok"}></span>
+			<span class="kit-status-dot" data-status={entry.severity === "error" ? "danger" : "ok"}></span>
 			<span class="kit-note-close" aria-hidden="true">×</span>
 			<span class="kit-note-text">{entry.text}</span>
 			{#if entry.count > 1}

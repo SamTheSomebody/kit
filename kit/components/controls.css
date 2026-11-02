@@ -172,7 +172,10 @@ body.scrubbing * {
 /* ── status light (dock tab · busy button · notification) ───────────
    One device for severity / busy. Lives in the control layer so a Button
    `busy` paints without mounting a dock. Tokens default on :root; a stage
-   may still override via applyDockTheme. */
+   may still override via applyDockTheme.
+   `.dock-tab-dot` is the name it had while it lived on dock tabs, kept as
+   an alias for markup written then. */
+.kit-status-dot,
 .dock-tab-dot {
 	flex: none;
 	width: var(--dock-tab-dot);
@@ -181,19 +184,23 @@ body.scrubbing * {
 	background: var(--tool-muted);
 }
 
+.kit-status-dot[data-status="busy"],
 .dock-tab-dot[data-status="busy"] {
 	background: var(--tool-accent);
 	animation: dock-tab-pulse var(--dock-tab-dot-pulse) ease-in-out infinite;
 }
 
+.kit-status-dot[data-status="ok"],
 .dock-tab-dot[data-status="ok"] {
 	background: var(--tool-success);
 }
 
+.kit-status-dot[data-status="warn"],
 .dock-tab-dot[data-status="warn"] {
 	background: var(--tool-highlight);
 }
 
+.kit-status-dot[data-status="danger"],
 .dock-tab-dot[data-status="danger"] {
 	background: var(--tool-danger);
 }
