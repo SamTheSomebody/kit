@@ -1,5 +1,34 @@
 # @samthesomebody/kit
 
+## 0.6.0
+
+### Minor Changes
+
+- 30340c1: **FilterRow** (kit, `@samthesomebody/kit/components/filterRow.svelte`): a list's filter drawn as the list's first row instead of a Field floating above it. It is a tree row tall and the pane's full width, with its search glyph on the twisty column and its count (`count`, e.g. `4/19`) on the type column, so typed text starts where the labels do. It goes straight in a `Pane`, above the `Container` the list scrolls in. Escape clears it, and a `trailing` snippet holds the list's own keys.
+  
+  panels' **Hierarchy** uses it for its filter, which used to be a Field in its own padded container.
+
+### Patch Changes
+
+- 7ad2b33: Two icons for an editor's header:
+  
+  - `select`: a pointer arrow, the tool beside `move`, `scale` and `rotate`.
+  - `mute`: a toggle that shows a speaker, crossed out while latched (muted).
+- 3ca2822: Popups sit above fields and are as tight as a row:
+  
+  - **Tooltips draw on the menu layer** (`--dock-z-menu`) instead of `z-index: 1`. At 1, any later control with its own z-index, such as a select's value, painted over the bubble.
+  - **One tight spec for every floating surface**, set beside the surface variables in `controls.css`:
+    - `--surface-pad-block`: 2px, the menu row's block padding
+    - `--surface-pad-inline`: 5px
+    - `--surface-line`: 1.2, the smallest line height that clears descenders when text wraps
+  
+    Tooltips, notifications and the confirm dialog use it. The dialog's padding and its gap between title, body and keys drop from 12px to 5px.
+  - The `use:tooltip` action loads `controls.css`, which holds the surface variables, so a page that uses only the action still gets a styled bubble.
+- c80461b: Tree eyes:
+  
+  - **Solo with Alt/Option**, as Photoshop's eye works. Alt-click an eye (or press Alt+Space on its row) and only that entry stays on. Alt-click it again and what was on before comes back. Soloing another entry straight after keeps those same marks to return to, and any other edit ends the solo where it stands. The pure rule is `toggleSolo` (exported, with the `MarkSolo` type).
+  - **The type stays right-aligned when an eye follows it.** The eye and the type both took `margin-inline-start: auto` and split the free space between them, which pulled the type toward the middle of the row.
+
 ## 0.5.1
 
 ### Patch Changes
