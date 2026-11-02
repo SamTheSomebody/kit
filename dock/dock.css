@@ -12,7 +12,7 @@
        .dock-root                     tree mount (flex, edge-to-edge)
          .dock-split.row|.col         split node
            <a> .dock-divider <b>      children + divider, in order
-         .dock-leaf[.collapsed|.solo] tab group (.solo = no strip at all)
+         .dock-leaf[.collapsed|.solo][data-strip] tab group (.solo = no strip at all)
            .dock-tabstrip             single-line, scrolls on overflow
              .dock-spill.l|.r         fade + hover chevron
              .dock-tab[.on]           draggable; .dock-tab-label,
@@ -24,7 +24,7 @@
            .dock-group-cell > .dock-group-tab
          .dock-empty                  empty-root drop target
        .dock-float[.front|.shaded|.moving]   a full tree +
-         .dock-float-grip + .dock-float-edge[data-dir]×8
+         .dock-float-grip[.loose] + .dock-float-edge[data-dir]×8
      .dock-insert · .dock-drop-preview       indicators
 
    SQUARED, everywhere. The drop preview, the float and its panes gave up
@@ -182,6 +182,17 @@ body.resizing * {
    IS the pane; in a float, it carries the ⠿ grip that moves the window. */
 .dock-leaf.solo > .dock-tabstrip {
 	display: none;
+}
+
+/* A pane whose strip mode is `never` stays bare even COLLAPSED, where the
+   strip would otherwise be the whole pane — so its ▸ stub stands in, in a
+   stack as well as a row, and the pane never vanishes from the stage. */
+.dock-leaf.collapsed.solo > .dock-collapsed-stub {
+	display: flex;
+}
+.dock-split.col > .dock-leaf.collapsed.solo,
+.dock-root > .dock-leaf.collapsed.solo {
+	flex: 0 0 var(--dock-tab-h) !important;
 }
 
 /* accordion: clicking the active tab collapses a leaf to its strip.
@@ -664,6 +675,19 @@ body.resizing * {
 }
 .dock-float-grip:hover {
 	color: var(--tool-text);
+}
+/* a float whose top-left pane has no strip (`never`) wears its grip loose on
+   the window corner, revealed while the window is hovered or being moved */
+.dock-float-grip.loose {
+	position: absolute;
+	top: 0;
+	left: 0;
+	opacity: 0;
+	transition: opacity var(--tool-duration-fast) var(--tool-ease-out);
+}
+.dock-float:hover > .dock-float-grip.loose,
+.dock-float.moving > .dock-float-grip.loose {
+	opacity: 1;
 }
 body:has(.dock-float.moving) {
 	cursor: grabbing;

@@ -36,6 +36,28 @@ import { createDockLayoutStore, dockLayoutJson, usableLayout } from '@samthesome
 import type { DockLayoutStore, DockLayoutTabs } from '@samthesomebody/dock';
 ```
 
+## Per-pane tab strip
+
+Each leaf can override the dock's strip rules with `strip` in the serialized layout:
+
+```json
+{ "leaf": true, "id": "L2", "tabs": ["game", "assets"], "active": "game", "strip": "never" }
+```
+
+| `strip`          | Strip                                                                       |
+| ---------------- | --------------------------------------------------------------------------- |
+| absent / `auto`  | the dock decides: hidden for the root solo pane, or single-tab panes in focus mode |
+| `always`         | always shown, even as the root solo pane or with focus mode on               |
+| `never`          | always hidden: several tabs, collapsed, or floating                          |
+
+`always` and `never` win over the global focus mode (`hideSingleTabBars`). `auto` is stored as
+absence, and an unknown value is repaired to absence when the layout is parsed.
+
+Right-click a pane, then **Layout › Tab strip** to set it. A pane with no strip keeps working
+through the same menu: **Tabs** switches between its tabs, and Close, Float, Split and Collapse act on
+its visible tab. Collapsed, it shows its ▸ stub. In a float, the ⠿ grip moves to the window's corner
+and shows on hover. A pane dragged or floated whole keeps its mode.
+
 ## Layers
 
 | Package                | Layer                              |

@@ -25,6 +25,8 @@ import {
 	isCollapsedTree,
 	lastCollapsedOf,
 	mergesAsGroup,
+	STRIP_MODES,
+	stripModeOf,
 	type DockCore,
 	type MintTab,
 } from "./tree";
@@ -583,13 +585,35 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		const tabId = tabElement?.dataset.tab ?? tabElement?.dataset.dev?.replace(/^dock-group-tab-/, "");
 		const leaf = leafOfElement(element);
 		const items: DockMenuItem[] = [];
+		/* A bare pane has no strip to right-click, so a click anywhere in it
+		   means its visible tab — the tab rows (close, float, split) stand in
+		   for what the strip would have offered, the float row for its drag. */
+		const bare = leaf !== null && isBareLeaf(core.state, leaf, core.floatOf(leaf) !== null);
+		const menuTabId = tabId ?? (bare ? (leaf?.active ?? undefined) : undefined);
 
 		/* `Open` LEADS, because it is the only row that answers "where did my
 		   tab go" — everything else acts on a tab already in front of you.
 		   ([HUMAN] Sam 2026-09-07.) */
 		items.push(...unopenedItems(leaf));
 
-		if (tabId && leaf) {
+		/* switching tabs is the strip's first job; without one, it lives here */
+		if (bare && leaf && leaf.tabs.length > 1) {
+			leaf.tabs.forEach((id, at) => {
+				const current = id === leaf.active && !leaf.collapsed;
+				items.push({
+					label: `Tabs/${current ? "✓ " : ""}${ports.tabs.get(id)?.title ?? id}`,
+					separator: at === 0,
+					disabled: current,
+					run: () => {
+						core.openLeaf(leaf, id);
+						rerender();
+					},
+				});
+			});
+		}
+
+		if (menuTabId && leaf) {
+			const tabId = menuTabId;
 			const definition = ports.tabs.get(tabId);
 			const others = leaf.tabs.filter((id) => id !== tabId);
 			items.push(
@@ -651,7 +675,8 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 					},
 				},
 			);
-		} else if (leaf) {
+		}
+		if (leaf && !tabId) {
 			items.push({
 				label: leaf.collapsed ? "Layout/Expand" : "Layout/Collapse",
 				run: () => {
@@ -662,6 +687,25 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 					}
 					rerender();
 				},
+			});
+		}
+
+		/* the pane's own strip mode — reachable with the strip gone, which is
+		   how a `never` pane gets its strip back */
+		if (leaf) {
+			const mode = stripModeOf(leaf);
+			STRIP_MODES.forEach(({ mode: option, label }, at) => {
+				items.push({
+					label: `Layout/Tab strip/${option === mode ? "✓ " : ""}${label}`,
+					separator: at === 0,
+					disabled: option === mode,
+					run: () => {
+						if (core.setStripMode(leaf, option)) {
+							ports.on?.notify?.(`tab strip: ${label.toLowerCase()}`);
+							rerender();
+						}
+					},
+				});
 			});
 		}
 
@@ -904,6 +948,9 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 		const bare = isBareLeaf(core.state, node, core.floatOf(node) !== null);
 		element.className = `dock-leaf${node.collapsed ? " collapsed" : ""}${bare ? " solo" : ""}`;
 		element.dataset.leaf = node.id;
+		if (node.strip) {
+			element.dataset.strip = node.strip; /* explicit mode; `auto` writes nothing */
+		}
 		const strip = document.createElement("div");
 		strip.className = "dock-tabstrip";
 		strip.dataset.dev = `dock-strip-${node.id}`;
@@ -1238,7 +1285,17 @@ export const createDock = (stage: HTMLElement, ports: DockPorts): DockHandle => 
 			event.stopPropagation();
 		});
 		grip.addEventListener("pointerdown", (event) => startFloatMove(event, float, element));
-		element.querySelector(".dock-tabstrip,.dock-group")?.prepend(grip);
+		/* The grip's home is the first strip — unless that pane is bare (its
+		   strip mode is `never`), where a hidden strip would take the only
+		   handle that moves the window with it. Then it sits LOOSE on the
+		   window's own top-left corner, revealed on hover. */
+		const gripHost = element.querySelector<HTMLElement>(".dock-tabstrip,.dock-group");
+		if (gripHost && !gripHost.closest(".dock-leaf.solo")) {
+			gripHost.prepend(grip);
+		} else {
+			grip.classList.add("loose");
+			element.prepend(grip);
+		}
 		if (!shaded) /* no resize while shaded */
 		{
 			(["n", "s", "e", "w", "ne", "nw", "se", "sw"] as const).forEach((direction) => {

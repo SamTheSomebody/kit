@@ -15,6 +15,7 @@ import type {
 	DockNode,
 	DockSerialized,
 	DockSplit,
+	DockStripMode,
 	DockZone,
 } from "./types";
 
@@ -22,7 +23,10 @@ export type DockCoreEvents = { mark(kind: DockMark): void; notify(text: string):
 
 /** A resolved drop: the payload pulled from its source, ready to land.
  *  `"same"` = dropped on/into itself; `null` = nothing to land. */
-export type TakenPayload = { tabs: string[]; active?: string | null; tree?: DockNode } | "same" | null;
+export type TakenPayload =
+	| { tabs: string[]; active?: string | null; tree?: DockNode; strip?: DockLeaf["strip"] }
+	| "same"
+	| null;
 
 /** Mints a tab id for an external ("ext") payload — the consumer port. */
 export type MintTab = () => string;
@@ -90,8 +94,20 @@ export const mergesAsGroup = (node: DockNode, presentedOn: "row" | "col"): boole
  * A bare pane has no drag source (the strip is what you grab) — it is still
  * a drop target on all five zones, and showing the bars again brings the
  * grab handle back.
+ *
+ * All of the above is the `auto` strip mode. A leaf's own `strip` overrides
+ * it, and wins over focus mode in both directions: `always` is never bare,
+ * `never` is always bare — several tabs, collapsed or floating included. The
+ * view keeps a `never` pane usable without its strip (context-menu rows, the
+ * ▸ stub when collapsed, the float's grip re-homed onto the window).
  */
 export const isBareLeaf = (state: DockSerialized, leaf: DockLeaf, inFloat: boolean): boolean => {
+	if (leaf.strip === "always") {
+		return false;
+	}
+	if (leaf.strip === "never") {
+		return true;
+	}
 	if (leaf.tabs.length !== 1 || leaf.collapsed) {
 		return false;
 	}
@@ -100,6 +116,19 @@ export const isBareLeaf = (state: DockSerialized, leaf: DockLeaf, inFloat: boole
 	}
 	return state.hideSingleTabBars === true && !inFloat;
 };
+
+/** A leaf's strip mode, with absent read as `"auto"`. */
+export const stripModeOf = (leaf: DockLeaf): DockStripMode => leaf.strip ?? "auto";
+
+/** Every strip mode with its menu wording, in menu order. */
+export const STRIP_MODES: readonly { readonly mode: DockStripMode; readonly label: string }[] = [
+	{ mode: "auto", label: "Auto" },
+	{ mode: "always", label: "Always show" },
+	{ mode: "never", label: "Never show" },
+];
+
+/** `"auto"` is stored as absence, so only the two overrides are accepted. */
+const isStripOverride = (value: unknown): value is DockLeaf["strip"] => value === "always" || value === "never";
 
 /** CSS `column` is the usual typo for the kit's `col`. Anything else is refuse. */
 const splitAxisOf = (value: unknown): "row" | "col" | null => {
@@ -142,6 +171,11 @@ const normalizeNode = (node: unknown, leafIds: Set<string>, tabs: Set<string>): 
 		}
 		if (node.collapsed !== undefined && node.collapsed !== false && !isFiniteNumber(node.collapsed)) {
 			node.collapsed = false;
+		}
+		/* `"auto"` is the default spelled out, and anything unknown has one
+		   safe reading — the dock's own rules — so both become absence */
+		if ("strip" in node && !isStripOverride(node.strip)) {
+			delete node.strip;
 		}
 		return true;
 	}
@@ -232,6 +266,8 @@ export type DockCore = {
 	topZ(): number;
 	collapseGuarded(leaf: DockLeaf): void;
 	openLeaf(leaf: DockLeaf | null, tabId?: string): void;
+	/** Set a pane's strip mode; false when it already had that mode. */
+	setStripMode(leaf: DockLeaf, mode: DockStripMode): boolean;
 	replaceNode(target: DockNode, replacement: DockNode): boolean;
 	detach(node: DockNode): void;
 	pullTab(leaf: DockLeaf, tabId: string): boolean;
@@ -318,6 +354,32 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 		}
 		leaf.collapsed = false;
 		mark("accordion");
+	};
+
+	const setStripMode = (leaf: DockLeaf, mode: DockStripMode): boolean => {
+		if (stripModeOf(leaf) === mode) {
+			return false;
+		}
+		if (mode === "auto") {
+			delete leaf.strip;
+		} else {
+			leaf.strip = mode;
+		}
+		mark("bars");
+		return true;
+	};
+
+	/* A pane payload re-materialized as a new leaf keeps the strip mode it
+	   left with — a pane is the unit that owns one, tabs are not. */
+	const leafFrom = (got: Exclude<TakenPayload, "same" | null>): DockNode => {
+		if (got.tree) {
+			return got.tree;
+		}
+		const made = newLeaf(got.tabs, got.active ?? undefined);
+		if (got.strip) {
+			made.strip = got.strip;
+		}
+		return made;
 	};
 
 	/* Replace `target` wherever it sits — docked root, float root, or either
@@ -582,7 +644,7 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 		}
 		drag.wasFloat = Boolean(floatOf(source));
 		if (drag.kind === "pane") {
-			const payload = { tabs: [...source.tabs], active: source.active };
+			const payload = { tabs: [...source.tabs], active: source.active, strip: source.strip };
 			source.tabs.length = 0;
 			detach(source);
 			return payload;
@@ -649,7 +711,7 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 			return false;
 		}
 		/* a tree payload splices in whole — its internal splits survive */
-		splitLeaf(leaf, zone, got.tree ?? newLeaf(got.tabs, got.active ?? undefined));
+		splitLeaf(leaf, zone, leafFrom(got));
 		if (drag.kind !== "ext") {
 			mark("split");
 			if (drag.wasFloat) {
@@ -697,7 +759,7 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 			split: "row",
 			ratio: 0.5,
 			a: subtree,
-			b: got.tree ?? newLeaf(got.tabs, got.active ?? undefined),
+			b: leafFrom(got),
 		});
 		mark("split");
 		if (drag.wasFloat) {
@@ -713,7 +775,7 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 		if (got === null || got === "same") {
 			return false;
 		}
-		const added = got.tree ?? newLeaf(got.tabs, got.active ?? undefined);
+		const added = leafFrom(got);
 		const horizontal = zone === "l" || zone === "r";
 		const first = zone === "l" || zone === "t";
 		state.layout = state.layout
@@ -742,7 +804,7 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 		if (got === null || got === "same") {
 			return false;
 		}
-		floatAt(got.tree ?? newLeaf(got.tabs, got.active ?? undefined), x, y, w, h);
+		floatAt(leafFrom(got), x, y, w, h);
 		if (drag.kind === "tab") {
 			mark("float");
 		}
@@ -756,7 +818,7 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 		if (got === null || got === "same") {
 			return false;
 		}
-		state.layout = got.tree ?? newLeaf(got.tabs, got.active ?? undefined);
+		state.layout = leafFrom(got);
 		if (drag.wasFloat) {
 			mark("redock");
 		}
@@ -808,6 +870,7 @@ export const createDockCore = (events: DockCoreEvents, floatBaseZ: number): Dock
 		topZ: () => topZ,
 		collapseGuarded,
 		openLeaf,
+		setStripMode,
 		replaceNode,
 		detach,
 		pullTab,
