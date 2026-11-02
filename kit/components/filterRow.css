@@ -1,0 +1,78 @@
+/* FilterRow — a list's filter as the list's first row.
+   Row metrics are the tree row's (`tree.css`): the same block padding and
+   line, so the filter is exactly one row tall. The inline padding is the
+   pane's edge plus the row's own, because the row sits straight in the
+   pane while the list below sits in a padded container: that is what puts
+   the glyph on the twisty column and the count on the type column. */
+.kit-filter-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--tool-space-1) / 2);
+  min-width: 0;
+  padding-block: calc(var(--tool-space-1) / 2);
+  padding-inline: calc(var(--dock-pad) + var(--dock-tab-underline) + var(--dock-pad-tight));
+  border-block-end: var(--dock-divider) solid var(--tool-border);
+  color: var(--tool-text);
+  font-size: var(--tool-font-size-body);
+  line-height: 1;
+  cursor: text;
+  transition:
+    background-color var(--tool-duration-fast) var(--tool-ease-out),
+    border-color var(--tool-duration-fast) var(--tool-ease-out);
+}
+
+.kit-filter-row:hover {
+  background: color-mix(in srgb, var(--tool-panel-hover) 40%, transparent);
+}
+
+.kit-filter-row:focus-within {
+  border-block-end-color: var(--tool-accent);
+}
+
+/* the twisty column: 8px, the 12px glyph centred over it */
+.kit-filter-row-glyph {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  width: var(--tool-space-2);
+  color: var(--tool-muted);
+}
+
+.kit-filter-row:focus-within .kit-filter-row-glyph {
+  color: var(--tool-text);
+}
+
+.kit-filter-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--tool-font-size-body);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: var(--tool-font);
+  font-size: inherit;
+  line-height: 1;
+  appearance: none;
+}
+
+.kit-filter-row input:focus {
+  outline: 0;
+}
+
+.kit-filter-row input::placeholder {
+  color: var(--tool-muted);
+}
+
+/* Escape clears; the native cancel cross is a second, smaller way to do it */
+.kit-filter-row input::-webkit-search-cancel-button,
+.kit-filter-row input::-webkit-search-decoration {
+  appearance: none;
+}
+
+/* the type column's tone and figures */
+.kit-filter-row-count {
+  flex: none;
+  color: var(--tool-muted);
+  font-variant-numeric: tabular-nums;
+}
