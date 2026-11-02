@@ -13,7 +13,9 @@
 		treeRowForKey,
 		setMark,
 		stroke,
+		toggleSolo,
 		visibleRows,
+		type MarkSolo,
 		type TreeNode,
 	} from "./index.ts";
 
@@ -38,6 +40,10 @@
 	   component, so the estate's other trees have it too. This tree only
 	   widens the target — the whole ROW answers for its eye while a stroke is
 	   in flight, so a swipe need not stay inside a 12px column.
+
+	   SOLO with Alt/Option: Alt-click an eye (or Alt+Space on its row) and
+	   only that entry stays on; Alt-click it again and what was on before
+	   comes back (`toggleSolo`).
 
 	   Hit-testing, not pointer capture: the pointer spends the whole gesture
 	   over rows the press did not start on, and capture would send every
@@ -121,6 +127,25 @@
 	const paint = (node: TreeNode, on: boolean): void => {
 		marked = setMark(marked, node, on);
 		onmark?.(marked);
+	};
+
+	/* Alt/Option on an eye solos its node (`toggleSolo`); again, unsolos. */
+	let solo: MarkSolo | undefined;
+	const soloMark = (node: TreeNode): void => {
+		const next = toggleSolo(marked, node, solo);
+		solo = next.solo;
+		marked = next.marked;
+		onmark?.(marked);
+	};
+
+	/* Caught on the row, in the capture phase, before the eye's own toggle
+	   gesture sees the press: an Alt press is a solo, not the start of a swipe. */
+	const soloPress = (node: TreeNode, event: PointerEvent | MouseEvent): void => {
+		if (!eye || select || !event.altKey || disabled || node.disabled) return;
+		if (!(event.target as HTMLElement).closest(".kit-tree-eye")) return;
+		event.preventDefault();
+		event.stopPropagation();
+		if (event.type === "pointerdown") soloMark(node);
 	};
 
 	/* The row standing in for its own eye. `crossedTo` is the toggle
@@ -220,7 +245,8 @@
 			toggleTwist(row.node.id);
 		} else if (eye && event.key === " ") {
 			event.preventDefault();
-			paint(row.node, markState(row.node, marked) !== "on");
+			if (event.altKey && !select) soloMark(row.node);
+			else paint(row.node, markState(row.node, marked) !== "on");
 		}
 	};
 </script>
@@ -244,6 +270,8 @@
 			aria-expanded={row.leaf ? undefined : expanded.has(row.node.id)}
 			data-row={row.node.id}
 			tabindex={focusable === row.node.id ? 0 : -1}
+			onpointerdowncapture={(event) => soloPress(row.node, event)}
+			onclickcapture={(event) => soloPress(row.node, event)}
 			onpointermove={(event) => {
 				crossPaint(row.node);
 				overRow(row.node.id, row.parentId, event);
