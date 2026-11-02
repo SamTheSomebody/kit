@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { hasTicks, hintParts, isRule, placeMenu, placeSubmenu, menuRowForKey, type MenuItem } from "./index.ts";
 
+	import "./controls.css";
 	import "./menu.css";
 
 	/* ONE MENU AT A TIME, whichever way it was raised — a chain, not a menu.

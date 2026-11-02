@@ -2,6 +2,7 @@
 	import type { Snippet } from "svelte";
 
 	import "./controls.css";
+	import "../layout.css";
 	import "./label.css";
 
 	/* Shell Row = layout Row with recipe `toolbar` (design lock). Classes only —

@@ -5,6 +5,7 @@
 	import IconButton from "./iconButton.svelte";
 	import Label from "./label.svelte";
 
+	import "./controls.css";
 	import "./field.css";
 
 	/* Text entry, boxless: a hairline under the line of type and nothing
@@ -53,8 +54,11 @@
 	}: {
 		/* `string | number` so a numeric field binds straight to a numeric
 		   model — `bind:value={config.rtp}` rather than a String()/Number()
-		   pair at every call site. Svelte coerces on `type="number"`, so the
-		   binding writes back the same shape the caller passed in. */
+		   pair at every call site. Typing writes back the shape the caller
+		   passed in: a number model takes only finite numbers (half-typed
+		   text like "" or "-" leaves it as it was), a string model stays a
+		   string. Passed one-way instead, the field shows what was typed
+		   until it loses focus, then the value again. */
 		value?: string | number;
 		/* A control names itself the same way everywhere: a `Label` above it,
 		   inside the same block. Doing it here rather than leaving every
@@ -102,6 +106,39 @@
 
 	let box = $state<HTMLElement | undefined>(undefined);
 	let input = $state<HTMLInputElement | undefined>(undefined);
+
+	/* The text a value shows as. NaN (a number not typed yet) shows empty. */
+	const textOf = (shown: string | number): string =>
+		typeof shown === "number" ? (Number.isFinite(shown) ? String(shown) : "") : shown;
+
+	/* Whether the typed text already says `shown`: "1.50" says 1.5, so a
+	   model write while typing doesn't rewrite the text under the caret. */
+	const says = (text: string, shown: string | number): boolean => {
+		if (typeof shown !== "number") return text === shown;
+		const typed = text.trim() === "" ? Number.NaN : Number(text);
+		return Number.isFinite(shown) ? typed === shown : !Number.isFinite(typed);
+	};
+
+	$effect(() => {
+		const element = input;
+		const shown = value;
+		if (element && !says(element.value, shown)) element.value = textOf(shown);
+	});
+
+	const typed = (text: string): void => {
+		if (typeof value === "number") {
+			const trimmed = text.trim();
+			if (trimmed !== "" && Number.isFinite(Number(trimmed))) value = Number(trimmed);
+		} else {
+			value = text;
+		}
+		oninput?.(text);
+	};
+
+	const left = (): void => {
+		if (input && !says(input.value, value)) input.value = textOf(value);
+		onblur?.();
+	};
 
 	const scrubbable = $derived(type === "number" && !disabled && scrub);
 	const steppable = $derived(type === "number");
@@ -169,10 +206,9 @@
 			{min}
 			{max}
 			{step}
-			bind:value
-			oninput={() => oninput?.(String(value))}
+			oninput={(event) => typed(event.currentTarget.value)}
 			onfocus={() => onfocus?.()}
-			onblur={() => onblur?.()}
+			onblur={left}
 			onkeydown={(event) => onkeydown?.(event)}
 		/>
 		{#if unit}<span class="kit-unit">{unit}</span>{/if}

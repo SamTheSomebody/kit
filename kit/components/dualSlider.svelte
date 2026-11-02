@@ -4,6 +4,7 @@
 	import Field from "./field.svelte";
 	import Label from "./label.svelte";
 
+	import "./controls.css";
 	import "./slider.css";
 	import "./field.css";
 
@@ -69,7 +70,7 @@
 			return min;
 		}
 		const box = track.getBoundingClientRect();
-		return min + ((clientX - box.left) / box.width) * (max - min);
+		return box.width > 0 ? min + ((clientX - box.left) / box.width) * (max - min) : min;
 	};
 
 	const shift = (clientX: number): void => {
@@ -82,7 +83,15 @@
 		onchange?.({ from, to });
 	};
 
-	const percent = (value: number): number => ((value - min) / (max - min)) * 100;
+	/* An empty range (min = max) draws both knobs at the start rather than at NaN. */
+	const percent = (value: number): number => (max > min ? ((value - min) / (max - min)) * 100 : 0);
+
+	/* A drag ends however the pointer goes: released, cancelled (a touch
+	   the browser took for a scroll), or the window losing focus mid-drag. */
+	const release = (): void => {
+		dragging = undefined;
+		grabbed = undefined;
+	};
 </script>
 
 <svelte:window
@@ -91,10 +100,9 @@
 		if (dragging === "span") shift(event.clientX);
 		else write(dragging, atPointer(event.clientX));
 	}}
-	onpointerup={() => {
-		dragging = undefined;
-		grabbed = undefined;
-	}}
+	onpointerup={release}
+	onpointercancel={release}
+	onblur={release}
 />
 
 <div class="kit-slider dual" class:disabled data-dual style="--from: {percent(from)}; --to: {percent(to)}">

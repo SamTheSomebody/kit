@@ -117,11 +117,20 @@ export const bindScrub = (handle: HTMLElement, ports: ScrubPorts): (() => void) 
 			ports.write(next);
 		};
 
-		const finish = (): void => {
+		/* Ends the drag's listeners and the page-wide cursor. Also run on
+		   unbind — a field unmounted or disabled mid-drag — which ends the
+		   gesture without committing or clicking anything. */
+		const stop = (): void => {
 			handle.removeEventListener("pointermove", move);
 			handle.removeEventListener("pointerup", finish);
 			handle.removeEventListener("pointercancel", finish);
+			handle.removeEventListener("lostpointercapture", finish);
 			handle.ownerDocument.body.classList.remove("scrubbing");
+			active = undefined;
+		};
+
+		const finish = (): void => {
+			stop();
 			if (engaged) {
 				ports.commit?.();
 			} else {
@@ -129,11 +138,20 @@ export const bindScrub = (handle: HTMLElement, ports: ScrubPorts): (() => void) 
 			}
 		};
 
+		active?.();
+		active = stop;
 		handle.addEventListener("pointermove", move);
 		handle.addEventListener("pointerup", finish);
 		handle.addEventListener("pointercancel", finish);
+		/* capture lost without a pointerup (the handle re-rendered, another
+		   element took capture): the press is over all the same */
+		handle.addEventListener("lostpointercapture", finish);
 	};
 
+	let active: (() => void) | undefined;
 	handle.addEventListener("pointerdown", onPointerDown);
-	return () => handle.removeEventListener("pointerdown", onPointerDown);
+	return () => {
+		handle.removeEventListener("pointerdown", onPointerDown);
+		active?.();
+	};
 };

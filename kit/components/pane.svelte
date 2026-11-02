@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 
+	import "./controls.css";
+	import "../layout.css";
 	import "./pane.css";
 
 	/* Pane = Container fill alias (layout kit). `fill` = pad 0 / gap 0 / overflow hidden. */

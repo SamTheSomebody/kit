@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Label from "./label.svelte";
 
+	import "./controls.css";
 	import "./field.css";
 	import "./select.css";
 

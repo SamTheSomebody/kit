@@ -13,6 +13,15 @@
 		const trimmed = text.trim();
 		return trimmed === "" ? Number.NaN : Number(trimmed);
 	};
+
+	/* What the field shows: the value, and between a keystroke and the
+	   tool's answer, what was typed. Leaving the field shows the value again,
+	   so a number the tool clamped or refused doesn't stay on screen. */
+	const stored = (): number | string => (typeof value === "number" ? value : "");
+	let draft = $state<number | string>("");
+	$effect.pre(() => {
+		draft = stored();
+	});
 </script>
 
 {#if property.slider && !compact}
@@ -31,12 +40,13 @@
 {:else}
 	<Field
 		type="number"
-		value={typeof value === "number" ? value : ""}
+		bind:value={draft}
 		unit={property.unit}
 		min={property.min}
 		max={property.max}
 		step={property.step}
 		disabled={readonly}
 		oninput={(text) => onchange(parse(text))}
+		onblur={() => (draft = stored())}
 	/>
 {/if}

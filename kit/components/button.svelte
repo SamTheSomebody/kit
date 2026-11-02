@@ -4,6 +4,7 @@
 
 	import Icon from "./icon.svelte";
 
+	import "./controls.css";
 	import "./button.css";
 
 	/* THE KEY. A plate on a hard edge that latches: pressed or checked, it

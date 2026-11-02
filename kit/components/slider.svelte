@@ -1,10 +1,20 @@
 <script lang="ts">
-	import { commitSlider, sliderDigits, sliderFill, syncSlider, type SliderRange } from "./index.ts";
+	import {
+		commitSlider,
+		reseedSlider,
+		sameSliderBounds,
+		sliderDigits,
+		sliderFill,
+		syncSlider,
+		type SliderBounds,
+		type SliderRange,
+	} from "./index.ts";
 	import { untrack } from "svelte";
 
 	import Field from "./field.svelte";
 	import Label from "./label.svelte";
 
+	import "./controls.css";
 	import "./slider.css";
 	import "./field.css";
 
@@ -54,11 +64,12 @@
 		onchange?: (value: number) => void;
 	} = $props();
 
-	/* The bounds a reset returns to, and the working range, both read the
-	   props ONCE on purpose: an elastic track's `min`/`max` move away from
+	/* The bounds a reset returns to, and the working range, are SEEDED from
+	   the props, not derived: an elastic track's `min`/`max` move away from
 	   what the consumer passed, and re-reading them would drag the range
-	   back every time the component re-rendered. `untrack` says so rather
-	   than leaving svelte-check to guess. */
+	   back every time the component re-rendered. A real change of bounds is
+	   picked up below. `untrack` says so rather than leaving svelte-check
+	   to guess. */
 	const seed = untrack(() => ({
 		value,
 		min,
@@ -94,6 +105,25 @@
 		untrack(() => {
 			range = syncSlider(range, next);
 			typed = String(range.value);
+		});
+	});
+
+	/* Bounds the CONSUMER changes do land: an inspector reusing this slider
+	   for another object passes that object's range. Compared with the last
+	   bounds passed, not with the range, so a re-render with the same props
+	   never drags a grown elastic track back. */
+	let passed: SliderBounds = untrack(() => ({ min, max, limitMin, limitMax, elastic }));
+	$effect.pre(() => {
+		const next: SliderBounds = { min, max, limitMin, limitMax, elastic };
+		if (sameSliderBounds(next, passed)) {
+			return;
+		}
+		passed = next;
+		untrack(() => {
+			range = reseedSlider(range, next);
+			if (!editing) {
+				typed = String(range.value);
+			}
 		});
 	});
 

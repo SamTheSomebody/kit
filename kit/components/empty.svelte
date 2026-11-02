@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 
+	import "./controls.css";
 	import "./empty.css";
 
 	/* A pane with nothing in it is the first thing a new tool shows, and

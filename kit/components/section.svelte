@@ -3,6 +3,7 @@
 
 	import IconButton from "./iconButton.svelte";
 
+	import "./controls.css";
 	import "./section.css";
 
 	/* A NAMED LINE BREAK, and the replacement for every card in the estate.

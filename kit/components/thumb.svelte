@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "./controls.css";
 	import "./thumb.css";
 
 	/* ONE PLATE CELL — a square on a ground, the image filling it, a caption

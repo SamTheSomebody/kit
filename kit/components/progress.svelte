@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "./controls.css";
 	import "./progress.css";
 
 	/* The slider's own track with the knob removed: same hairline weight,

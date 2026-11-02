@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "./controls.css";
 	import "./checkbox.css";
 
 	/* A box, a tick, and the label as part of the target. `indeterminate` is

@@ -16,6 +16,12 @@
 		}),
 	);
 
+	/* One draft per axis, following the values; see `numberEditor`. */
+	let drafts = $state<number[]>([]);
+	$effect.pre(() => {
+		drafts = [...values];
+	});
+
 	const set = (index: number, text: string): void => {
 		const trimmed = text.trim();
 		const next = [...values];
@@ -30,11 +36,12 @@
 			<Field
 				type="number"
 				label={axis}
-				value={values[index] ?? 0}
+				bind:value={drafts[index]}
 				unit={property.unit}
 				step={property.step}
 				disabled={readonly}
 				oninput={(text) => set(index, text)}
+				onblur={() => (drafts = [...values])}
 			/>
 		</Slot>
 	{/each}
