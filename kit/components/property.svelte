@@ -5,6 +5,8 @@
 	import Slot from "../slot.svelte";
 	import Label from "./label.svelte";
 
+	import "./controls.css";
+	import "./tooltip.css";
 	import "./field.css";
 
 	/* ONE LINE OF AN INSPECTOR, inside a `Column recipe="fields"`: the label

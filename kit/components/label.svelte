@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 
+	import "./controls.css";
 	import "./label.css";
 
 	/* The caption, at the one size every control in the kit uses. `for` makes

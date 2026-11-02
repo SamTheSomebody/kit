@@ -17,11 +17,12 @@
 		type TreeNode,
 	} from "./index.ts";
 
-	import type { Snippet } from "svelte";
+	import { onDestroy, tick, type Snippet } from "svelte";
 	import Badge from "./badge.svelte";
 	import Checkbox from "./checkbox.svelte";
 	import IconButton from "./iconButton.svelte";
 
+	import "./controls.css";
 	import "./tree.css";
 	import "./checkbox.css";
 
@@ -172,16 +173,39 @@
 			nodes = parentId === undefined ? moveNode(nodes, drag.id, dropAt.id, dropAt.side) : apply(nodes);
 			onreorder?.(nodes);
 		}
+		cancelDrag();
+	};
+
+	/* A drag that ends any other way (cancelled, the window left, the tree
+	   unmounted) drops nothing, and gives the page its cursor back. */
+	const cancelDrag = (): void => {
 		drag = undefined;
 		dropAt = undefined;
 		document.body.classList.remove("reordering");
 	};
+	onDestroy(() => {
+		if (drag) cancelDrag();
+	});
+
+	/* One row is in the tab order: the selected one, or the first while
+	   nothing is selected, so the tree can be reached from the keyboard at
+	   all. Arrowing moves focus with the selection. */
+	let treeElement = $state<HTMLElement>();
+	const focusable = $derived(
+		rows.some((row) => row.node.id === selected) ? selected : rows[0]?.node.id,
+	);
 
 	const onKey = (event: KeyboardEvent): void => {
 		const next = treeRowForKey(rows, selected, event.key);
 		if (next !== undefined) {
 			event.preventDefault();
 			selected = next;
+			void tick().then(() => {
+				const row = [...(treeElement?.querySelectorAll<HTMLElement>(".kit-tree-row") ?? [])].find(
+					(element) => element.dataset.row === next,
+				);
+				row?.focus();
+			});
 			return;
 		}
 		const row = rows.find((candidate) => candidate.node.id === selected);
@@ -201,9 +225,9 @@
 	};
 </script>
 
-<svelte:window onpointerup={endDrag} />
+<svelte:window onpointerup={endDrag} onpointercancel={cancelDrag} onblur={() => drag && cancelDrag()} />
 
-<div class="kit-tree" class:select role="tree" tabindex="-1" onkeydown={onKey}>
+<div class="kit-tree" class:select role="tree" tabindex="-1" onkeydown={onKey} bind:this={treeElement}>
 	{#each rows as row (row.node.id)}
 		<div
 			class="kit-tree-row"
@@ -218,7 +242,8 @@
 			role="treeitem"
 			aria-selected={selected === row.node.id}
 			aria-expanded={row.leaf ? undefined : expanded.has(row.node.id)}
-			tabindex={selected === row.node.id ? 0 : -1}
+			data-row={row.node.id}
+			tabindex={focusable === row.node.id ? 0 : -1}
 			onpointermove={(event) => {
 				crossPaint(row.node);
 				overRow(row.node.id, row.parentId, event);

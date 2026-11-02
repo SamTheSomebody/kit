@@ -37,6 +37,13 @@
 	const hex = $derived(toHex(value) ?? "#000000");
 	let unreadable = $state(false);
 
+	/* The typed text follows the colour, and goes back to it when the field
+	   is left, half-typed or refused. */
+	let draft = $state("");
+	$effect.pre(() => {
+		draft = hex;
+	});
+
 	const type = (text: string): void => {
 		const parsed = parseHex(text);
 		unreadable = parsed === undefined;
@@ -54,7 +61,16 @@
 		oninput={(event) => onchange(fromHex(event.currentTarget.value))}
 	/>
 	{#if !compact}
-		<Field value={hex} invalid={unreadable} disabled={readonly} oninput={type} />
+		<Field
+			bind:value={draft}
+			invalid={unreadable}
+			disabled={readonly}
+			oninput={type}
+			onblur={() => {
+				draft = hex;
+				unreadable = false;
+			}}
+		/>
 	{/if}
 </LayoutRow>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "./controls.css";
 	import "./meta.css";
 
 	/* Facts in two columns: a muted term and a tabular value. Every tool had

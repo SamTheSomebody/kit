@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { GESTURES, GLYPHS, SPRITES, type IconName, ICON_SPRITE } from "./index.ts";
 
+	import "./controls.css";
 	import "./icon.css";
 
 	/* One sheet per document, mounted by whichever icon renders first. A

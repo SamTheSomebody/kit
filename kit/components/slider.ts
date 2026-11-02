@@ -66,6 +66,23 @@ export const commitSlider = (state: SliderRange, typed: string): SliderRange => 
 export const resetSliderRange = (state: SliderRange): SliderRange =>
 	syncSlider({ ...state, min: state.defaultMin, max: state.defaultMax }, state.value, { grow: false });
 
+/** The bounds a consumer passes in, as opposed to the range a track has grown to. */
+export type SliderBounds = Pick<SliderRange, "min" | "max" | "limitMin" | "limitMax" | "elastic">;
+
+export const sameSliderBounds = (first: SliderBounds, second: SliderBounds): boolean =>
+	first.min === second.min &&
+	first.max === second.max &&
+	first.limitMin === second.limitMin &&
+	first.limitMax === second.limitMax &&
+	first.elastic === second.elastic;
+
+/* New bounds from the consumer — another object selected into the same
+   inspector row, say. They replace the range outright (an elastic track's
+   growth belonged to the old bounds) and the value is pulled inside them,
+   or for an elastic track, the track grows to hold it. */
+export const reseedSlider = (state: SliderRange, bounds: SliderBounds): SliderRange =>
+	syncSlider({ ...state, ...bounds, defaultMin: bounds.min, defaultMax: bounds.max }, state.value);
+
 /* How full the track reads. A percentage of the CURRENT bounds, so an
    elastic track is right whatever it has grown to. */
 export const sliderFill = (state: SliderRange): number => {

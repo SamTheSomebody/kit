@@ -2,6 +2,7 @@
 	import { scrollFromRail, scrollState, withinReach } from "./index.ts";
 	import type { Snippet } from "svelte";
 
+	import "./controls.css";
 	import "./scroll.css";
 
 	/* THE DOCK STRIP'S TWO DEVICES, TURNED NINETY DEGREES: a gradient fade on
@@ -24,7 +25,8 @@
 
 	/* the scrollport needs an id for the rail's `aria-controls` — one per
 	   instance, so two panes on a page do not point at each other */
-	const viewId = `kit-scroll-${Math.random().toString(36).slice(2, 8)}`;
+	const uid = $props.id();
+	const viewId = `kit-scroll-${uid}`;
 
 	let frame = $state<HTMLElement>();
 	let view = $state<HTMLElement>();
@@ -44,6 +46,23 @@
 	};
 
 	$effect(sync);
+
+	/* The view resizing and its CONTENT changing are separate events, and
+	   neither is a scroll: content that arrives after mount (a list that
+	   loads, a panel that re-renders longer) has to show the rail too.
+	   Same observers as `bindScroll`. */
+	$effect(() => {
+		const element = view;
+		if (!element) return;
+		const sizes = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(sync);
+		sizes?.observe(element);
+		const content = typeof MutationObserver === "undefined" ? null : new MutationObserver(sync);
+		content?.observe(element, { childList: true, subtree: true, characterData: true });
+		return () => {
+			sizes?.disconnect();
+			content?.disconnect();
+		};
+	});
 
 	const reach = (): number =>
 		Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tool-scroll-reach")) || 48;
@@ -74,6 +93,8 @@
 		near = withinReach({ x: event.clientX, y: event.clientY }, frame.getBoundingClientRect(), reach());
 	}}
 	onpointerup={() => (dragging = undefined)}
+	onpointercancel={() => (dragging = undefined)}
+	onblur={() => (dragging = undefined)}
 />
 
 <span

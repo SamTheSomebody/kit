@@ -27,6 +27,7 @@
 		type NotificationSeverity,
 	} from "./notification.ts";
 
+	import "./controls.css";
 	import "./notification.css";
 
 	let {

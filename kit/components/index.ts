@@ -63,11 +63,13 @@ export {
 	knobStep,
 	nearerKnob,
 	resetSliderRange,
+	reseedSlider,
+	sameSliderBounds,
 	sliderDigits,
 	sliderFill,
 	syncSlider,
 } from "./slider";
-export type { DualRange, SliderRange } from "./slider";
+export type { DualRange, SliderBounds, SliderRange } from "./slider";
 export { nextSort, sortRows } from "./sort";
 export type { SortDirection, SortState } from "./sort";
 export {

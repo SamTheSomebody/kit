@@ -3,6 +3,7 @@
 
 	import Button from "./button.svelte";
 
+	import "./controls.css";
 	import "./segment.css";
 
 	/* Keys butted together with a hairline SEAM in the gap between them —
@@ -41,7 +42,9 @@
 	};
 </script>
 
-<div class="kit-segment" role={multiple ? "group" : "radiogroup"}>
+<!-- A group of toggle keys (each `aria-pressed`). Not a radiogroup: that
+     role promises radio children with arrow-key focus, which these aren't. -->
+<div class="kit-segment" role="group">
 	{#each options as option (option.value)}
 		<Button
 			class="kit-segment-item"

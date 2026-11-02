@@ -3,6 +3,7 @@
 
 	import Icon from "./icon.svelte";
 
+	import "./controls.css";
 	import "./icon.css";
 	import "./tooltip.css";
 

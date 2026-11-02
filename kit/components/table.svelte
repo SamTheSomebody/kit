@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { nextSort, type SortState } from "./index.ts";
 
+	import "./controls.css";
 	import "./table.css";
 
 	/* THE TABLE ROW IS THE TREE ROW IS THE MENU ROW: one 16px object (2px of
@@ -40,6 +41,10 @@
 	   ellipsises when there is none. Two columns resolve to the old value, so
 	   the drawn form of every table that shipped is unchanged. */
 	const tracks = $derived(columns.map((column) => (column.numeric ? "max-content" : "minmax(0, 1fr)")).join(" "));
+
+	/* One row is in the tab order: the selected one, or the first while
+	   nothing is selected, so the table can be reached from the keyboard. */
+	const focusable = $derived(rows.some((row) => row.id === selected) ? selected : rows[0]?.id);
 </script>
 
 <div class="kit-table" role="table" style="--kit-table-columns: {tracks}">
@@ -67,12 +72,15 @@
 			class:on={selected === row.id}
 			class:disabled={row.disabled}
 			role="row"
-			tabindex={selected === row.id ? 0 : -1}
-			onclick={() => (selected = row.id)}
+			aria-disabled={row.disabled || undefined}
+			tabindex={focusable === row.id ? 0 : -1}
+			onclick={() => {
+				if (!row.disabled) selected = row.id;
+			}}
 			onkeydown={(event) => {
 				if (event.key !== "Enter" && event.key !== " ") return;
 				event.preventDefault();
-				selected = row.id;
+				if (!row.disabled) selected = row.id;
 			}}
 		>
 			{#each columns as column (column.key)}

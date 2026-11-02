@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "./controls.css";
 	import "./spinner.css";
 
 	/* spine-publish `.export-wheel`: accent tip on a border ring. Use when

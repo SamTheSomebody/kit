@@ -111,6 +111,7 @@
 
 	import { countByLevel, entryKey } from "@samthesomebody/kit/terminal/log.ts";
 
+	import "@samthesomebody/kit/components/controls.css";
 	import "@samthesomebody/kit/terminal/log.css";
 
 	/* A CONSOLE IS COMPOSED. This is the root: it holds the lines, the view

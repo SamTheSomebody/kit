@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 
+	import "./controls.css";
 	import "./badge.css";
 
 	/* A READOUT, not a control: no hover, no focus, no disabled of its own —
