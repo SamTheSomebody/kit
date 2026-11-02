@@ -1,5 +1,23 @@
 # @samthesomebody/kit
 
+## 0.5.0
+
+### Minor Changes
+
+- 975bcca: Deep `.ts` paths are no longer exported: `@samthesomebody/kit/components/*.ts` and `@samthesomebody/kit/terminal/*.ts` are gone, as announced in 0.4. Use the entry points instead:
+  
+  - `@samthesomebody/kit/components`: control logic, `createRegistry`, the editor and property types, and the notification queue (`pushNotification` and friends, newly exported here)
+  - `@samthesomebody/kit/editors`
+  - `@samthesomebody/kit/tooltip`
+  - `@samthesomebody/kit/terminal/core`
+  - `@samthesomebody/kit/terminal`
+  
+  Components (`*.svelte`) and stylesheets (`*.css`) keep their paths.
+
+### Patch Changes
+
+- 07db945: `@samthesomebody/kit/terminal` exports `BuiltInLogLevel` too, as `@samthesomebody/kit/terminal/core` already did. Code that maps the five built-in levels onto something closed, such as `console` methods, needs it now that `LogLevel` accepts a tool's own levels.
+
 ## 0.4.0
 
 ### Minor Changes
