@@ -47,6 +47,13 @@
 	--surface-radius: 0;
 	--surface-shadow-near: var(--tool-shadow-1);
 	--surface-shadow-far: var(--tool-shadow-2);
+	/* AS TIGHT AS A ROW. A surface floats over the work, so every pixel of
+	   it hides some: it takes the menu row's padding (2px block, 5px
+	   inline) and the smallest line height that still clears descenders
+	   when its text wraps. */
+	--surface-pad-block: calc(var(--tool-space-1) / 2);
+	--surface-pad-inline: var(--dock-pad-tight);
+	--surface-line: 1.2;
 }
 
 /* ── the control row ──────────────────────────────────────────────── */

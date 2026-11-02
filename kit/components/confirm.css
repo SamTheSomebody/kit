@@ -23,7 +23,7 @@
 	container-type: inline-size;
 	display: flex;
 	flex-direction: column;
-	gap: var(--tool-space-3);
+	gap: var(--dock-pad-tight);
 	min-width: 0;
 	/* `container-type: inline-size` brings inline-size containment with it,
 	   which means this box may NOT size itself from its contents — so it
@@ -32,7 +32,7 @@
 	   its width to come from. */
 	width: 100%;
 	max-width: 44ch;
-	padding: var(--tool-space-3);
+	padding: var(--surface-pad-inline);
 	border: var(--dock-divider) solid var(--surface-border);
 	border-radius: var(--surface-radius);
 	background: var(--surface-bg);
@@ -48,7 +48,7 @@
 .kit-dialog p {
 	margin: 0;
 	color: var(--tool-muted);
-	line-height: 1.45;
+	line-height: var(--surface-line);
 }
 .kit-dialog .kit-bar {
 	justify-content: flex-end;
