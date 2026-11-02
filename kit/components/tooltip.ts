@@ -13,6 +13,7 @@
  * the delay is for a pointer crossing a control, nothing else.
  */
 
+import "./controls.css";
 import "./tooltip.css";
 
 export type TooltipOptions = string | { text: string; below?: boolean };

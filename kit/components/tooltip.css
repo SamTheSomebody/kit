@@ -18,10 +18,12 @@
 	position: absolute;
 	bottom: calc(100% + var(--dock-pad-tight));
 	left: 0;
-	z-index: 1;
+	/* the menu layer, not 1: at 1 any later control that sets its own
+	   z-index (a select, a segment) painted over the bubble */
+	z-index: var(--dock-z-menu);
 	width: max-content;
 	max-width: 28ch;
-	padding: var(--dock-pad-tight) var(--dock-pad);
+	padding: var(--surface-pad-block) var(--surface-pad-inline);
 	border: var(--dock-divider) solid var(--surface-border);
 	border-radius: var(--surface-radius);
 	background: var(--surface-bg);
@@ -29,7 +31,7 @@
 	color: var(--tool-text);
 	font-size: var(--tool-font-size-body);
 	font-weight: 400;
-	line-height: 1.4;
+	line-height: var(--surface-line);
 	white-space: normal;
 	text-align: left;
 	opacity: 0;

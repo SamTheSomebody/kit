@@ -80,7 +80,7 @@
 	gap: var(--dock-pad);
 	min-width: 0;
 	width: 100%;
-	padding: var(--dock-pad-tight) var(--dock-pad);
+	padding: var(--surface-pad-block) var(--surface-pad-inline);
 	border: var(--dock-divider) solid var(--surface-border);
 	border-radius: var(--surface-radius);
 	background: var(--surface-bg);
@@ -88,7 +88,7 @@
 	color: var(--tool-text);
 	font-family: var(--tool-font);
 	font-size: var(--tool-font-size-body);
-	line-height: 1.4;
+	line-height: var(--surface-line);
 	text-align: left;
 	cursor: pointer;
 	overflow: hidden;
