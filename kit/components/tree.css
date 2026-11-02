@@ -142,12 +142,33 @@
 	font-size: inherit;
 	line-height: 1;
 	cursor: pointer;
-	transition:
-		color var(--tool-duration-fast) var(--tool-ease-out),
-		transform var(--tool-duration-fast) var(--tool-ease-out);
+	transition: color var(--tool-duration-fast) var(--tool-ease-out);
 }
-.kit-tree-twist[aria-expanded="false"] {
+/* The caret turns, not the button: a transformed button would become the
+   box its hit area (below) is positioned in, and turn with it. */
+.kit-tree-caret {
+	display: inline-block;
+	transition: transform var(--tool-duration-fast) var(--tool-ease-out);
+}
+.kit-tree-twist[aria-expanded="false"] .kit-tree-caret {
 	transform: rotate(-90deg);
+}
+/* THE TWISTY'S TARGET IS THE WHOLE INDENT. The caret is 8px, and at depth
+   three it sits 40px in from where the pointer lands when you aim at "the
+   start of the line". The hit area runs from the row's leading edge (the
+   selection bar included) to the caret's far side, the full row height, so
+   aiming anywhere left of the label folds the branch. Drawn as an
+   invisible pseudo on the button, so the layout does not move and the
+   press is the button's own. Branches only: a leaf's indent selects. */
+.kit-tree-twist:not(.leaf)::after {
+	content: "";
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: calc(-1 * var(--dock-tab-underline));
+	inline-size: calc(
+		var(--dock-tab-underline) + var(--dock-pad-tight) + var(--kit-tree-depth, 0) * var(--tool-space-3) +
+			var(--tool-space-2)
+	);
 }
 /* a leaf keeps the twisty's width so every row's label starts on the same
    column — an indent that only some rows honour is not an indent */

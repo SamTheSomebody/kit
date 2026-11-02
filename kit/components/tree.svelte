@@ -271,7 +271,19 @@
 				event.preventDefault();
 				foldTheBranch(row.node.id);
 			}}
-			onmousedown={(event) => event.button === 1 && event.preventDefault()}
+			ondblclick={(event) => {
+				/* A double-click on a branch row folds it: the whole line is
+				   the target, not only the caret. The twisty and the row's own
+				   controls (checkbox, eye) keep their clicks. */
+				if (row.leaf || (event.target as HTMLElement).closest("button, label")) return;
+				event.preventDefault();
+				toggleTwist(row.node.id);
+			}}
+			onmousedown={(event) => {
+				/* no autoscroll on a middle press, and no word selected by the
+				   double-click that folds the row */
+				if (event.button === 1 || event.detail > 1) event.preventDefault();
+			}}
 			onkeydown={(event) => {
 				if (event.key !== "Enter") return;
 				selected = row.node.id;
@@ -293,7 +305,8 @@
 					aria-expanded={row.leaf ? undefined : expanded.has(row.node.id)}
 					aria-label={row.leaf ? undefined : `${expanded.has(row.node.id) ? "Collapse" : "Expand"} ${row.node.label}`}
 					tabindex={-1}
-					onclick={() => !row.leaf && toggleTwist(row.node.id)}>▾</button
+					onclick={() => !row.leaf && toggleTwist(row.node.id)}
+					><span class="kit-tree-caret">▾</span></button
 				>
 			{/if}
 
