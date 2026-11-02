@@ -23,7 +23,7 @@ export { DOCK_COMMANDS, DOCK_KEYMAP } from './commands';
 export { closeDockMenu } from './menu';
 export { applyDockTheme, DOCK_THEME, themeOf } from './theme';
 export type { DockTheme } from './theme';
-export type { DockEventsPort, DockExternalPort, DockFloat, DockHandle, DockLeaf, DockMark, DockMenuContext, DockMenuItem, DockMenuPort, DockNode, DockOpenOptions, DockPorts, DockSerialized, DockSplit, DockTabDef, DockTabsPort, DockTabStatus, DockZone } from './types';
+export type { DockEventsPort, DockExternalPort, DockFloat, DockHandle, DockLeaf, DockMark, DockMenuContext, DockMenuItem, DockMenuPort, DockNode, DockOpenOptions, DockPorts, DockSerialized, DockSplit, DockStripMode, DockTabDef, DockTabsPort, DockTabStatus, DockZone } from './types';
 
 /* The escape hatch for content a re-parent would destroy — an iframe, a
    <video>, a scroll position (`slot.ts`). */

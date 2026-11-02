@@ -11,6 +11,21 @@
 
 import type { Command, Keymap } from "@samthesomebody/kit/components";
 
+/**
+ * How one pane treats its tab strip.
+ *
+ *  - `auto` — the dock's rules decide (`isBareLeaf`): bare as the root solo
+ *    pane, or as a docked single-tab pane while focus mode is on.
+ *  - `always` — the strip shows even where those rules would hide it.
+ *  - `never` — the strip is hidden even with several tabs, collapsed, or in a
+ *    float. The pane's context menu stands in for it (tab switching, close,
+ *    float, split, collapse, and the row that brings the strip back); a
+ *    collapsed pane shows its ▸ stub; a float keeps its ⠿ grip.
+ *
+ * Both explicit modes win over the global focus mode.
+ */
+export type DockStripMode = "auto" | "always" | "never";
+
 /** Tab group. `collapsed` holds the global collapse sequence № (so "most
  *  recently collapsed" survives reload); `false`/absent = expanded. */
 export type DockLeaf = {
@@ -20,6 +35,10 @@ export type DockLeaf = {
 	/** Null only transiently while a leaf empties (it detaches right after). */
 	active: string | null;
 	collapsed?: number | false;
+	/** Absent reads as `"auto"` — {@link DockStripMode}. Only `"always"` and
+	 *  `"never"` are ever written, so a layout that never sets one serializes
+	 *  exactly as before. */
+	strip?: Exclude<DockStripMode, "auto">;
 };
 
 export type DockSplit = {
@@ -54,6 +73,8 @@ export type DockSerialized = {
 	 * the bar is the only way to choose between them; a collapsed pane keeps
 	 * it because there the bar IS the pane; a float keeps it because its
 	 * strip carries the ⠿ grip that moves the window.
+	 *
+	 * A pane's own `strip` mode (`always` / `never`) wins over this flag.
 	 *
 	 * Layout state, not a preference — it rides in the envelope so the
 	 * consumer's existing persistence restores it with the tree. Absent
