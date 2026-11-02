@@ -28,6 +28,7 @@ export type IconName =
 	| "external"
 	| "filter"
 	| "fullscreen"
+	| "mute"
 	| "generate"
 	| "help"
 	| "link"
@@ -35,6 +36,7 @@ export type IconName =
 	| "menu"
 	| "middleClick"
 	| "more"
+	| "select"
 	| "move"
 	| "next"
 	| "pause"
@@ -93,10 +95,13 @@ export const SPRITES: Partial<Record<IconName, { off: string; on?: string }>> = 
 	star: { off: "i-star", on: "i-star-on" },
 	link: { off: "i-link", on: "i-link-off" },
 	fullscreen: { off: "i-expand", on: "i-restore" },
+	/* latched = muted: the speaker crossed out */
+	mute: { off: "i-sound", on: "i-sound-off" },
 	/* The editor bar's transforms and transport. `pause` is the toggle: its
 	   latched form is PLAY, because the key is latched while time is frozen
 	   and what it offers then is to let it run. `play` is named as well, for
 	   a host that draws the two as separate keys. */
+	select: { off: "i-select" },
 	move: { off: "i-move" },
 	rotate: { off: "i-rotate" },
 	scale: { off: "i-scale" },

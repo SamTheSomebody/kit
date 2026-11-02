@@ -47,6 +47,9 @@ export const ICON_SPRITE = `
 	<symbol id="i-expand" viewBox="0 0 12 12"><path d="M4.6 1.4H1.4v3.2M7.4 10.6h3.2V7.4"/></symbol>
 	<symbol id="i-restore" viewBox="0 0 12 12"><path d="M1.4 4.6h3.2V1.4M10.6 7.4H7.4v3.2"/></symbol>
 
+	<symbol id="i-select" viewBox="0 0 12 12"><path d="M2.6 1.4v8.4l2.3-2.2 1.7 3.2 1.3-.7-1.7-3.1h3.1z"/></symbol>
+	<symbol id="i-sound" viewBox="0 0 12 12"><path d="M1.4 4.4h2.2l2.8-2.6v8.4L3.6 7.6H1.4z"/><path d="M8.2 4.3a2.4 2.4 0 0 1 0 3.4M9.6 2.9a4.4 4.4 0 0 1 0 6.2"/></symbol>
+	<symbol id="i-sound-off" viewBox="0 0 12 12"><path d="M1.4 4.4h2.2l2.8-2.6v8.4L3.6 7.6H1.4z"/><path d="m8 4.5 3 3M11 4.5l-3 3"/></symbol>
 	<symbol id="i-move" viewBox="0 0 12 12"><path d="M6 1.3v9.4M1.3 6h9.4"/><path d="M4.4 3 6 1.3 7.6 3M4.4 9 6 10.7 7.6 9M3 4.4 1.3 6 3 7.6M9 4.4 10.7 6 9 7.6"/></symbol>
 	<symbol id="i-rotate" viewBox="0 0 12 12"><path d="M10.1 6.4A4.2 4.2 0 1 1 8.6 3"/><path d="M10.7 1.2v2.7H8"/><circle cx="6" cy="6" r="1" fill="currentColor" stroke="none"/></symbol>
 	<symbol id="i-scale" viewBox="0 0 12 12"><path d="M1.4 4.6v6h6"/><path d="M4.6 7.4 10.6 1.4"/><path d="M7.4 1.4h3.2v3.2"/></symbol>
