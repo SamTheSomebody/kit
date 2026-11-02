@@ -48,6 +48,40 @@
   border-block-end: var(--dock-divider) solid currentColor;
 }
 
+/* A folding header is one press target: `[▾ caption] ——— [badges]`.
+   The toggle is the caption itself, unstyled, with the twisty first. */
+.kit-section-title.folds {
+  cursor: pointer;
+}
+
+.kit-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dock-pad-tight);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.kit-section-twisty {
+  display: inline-flex;
+  color: var(--tool-muted);
+}
+
+.kit-section-toggle[aria-expanded='false'] .kit-section-twisty {
+  transform: rotate(-90deg);
+}
+
+.kit-section-title.folds:hover,
+.kit-section-title.folds:hover .kit-section-twisty {
+  color: var(--tool-text);
+}
+
 /* Status badges close the rule: `[caption] ——— [badges]`. */
 .kit-section-status {
   order: 1;
