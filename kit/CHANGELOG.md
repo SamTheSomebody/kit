@@ -1,5 +1,16 @@
 # @samthesomebody/kit
 
+## 0.5.1
+
+### Patch Changes
+
+- ebfed44: A folding Section's header is now the toggle. The twisty sits first, left of the caption, where a tree's does, and a press anywhere on the header line (caption, rule or badge) folds or unfolds it. Controls in the `status` snippet keep their own clicks. The caption is a real button (`aria-expanded`), so the keyboard and screen readers reach the fold through it. The separate twisty key after the status is gone.
+- 23fccf4: Tree folding is easier to hit:
+  
+  - **Double-click a branch row** to fold or unfold it. The whole line is the target, except the row's own controls (twisty, checkbox, eye). A double-click no longer selects the label's text.
+  - **The twisty's hit area covers the whole indent**, from the row's leading edge (the selection bar included) to the caret, at the full row height. Pressing anywhere left of the label folds the branch. It is an invisible pseudo-element, so nothing moves, and it applies to branches only: a leaf's indent still selects the row.
+  - The caret now turns inside the twisty (`.kit-tree-caret`) instead of the twisty turning, so the hit area doesn't rotate with it.
+
 ## 0.5.0
 
 ### Minor Changes
