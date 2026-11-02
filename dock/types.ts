@@ -225,6 +225,13 @@ export type DockPorts = {
 	on?: DockEventsPort;
 	external?: DockExternalPort;
 	menu?: DockMenuPort;
+	/**
+	 * Put this dock on `window.__DOCK__` (serialize, hydrate, state, openTab,
+	 * closeTab) for agent panes and scripted checks. Off by default: it
+	 * exposes the live layout to anything on the page, and with two docks the
+	 * last one made wins.
+	 */
+	automation?: boolean;
 };
 
 export type DockOpenOptions = {

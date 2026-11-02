@@ -9,7 +9,7 @@
 	import Pane from "@samthesomebody/kit/components/pane.svelte";
 	import Row from "@samthesomebody/kit/components/row.svelte";
 	import Tree from "@samthesomebody/kit/components/tree.svelte";
-	import { ancestorIds, branchIds, filterTree, nodeCount, type TreeNode } from "@samthesomebody/kit/components/tree.ts";
+	import { ancestorIds, branchIds, filterTree, nodeCount, type TreeNode } from "@samthesomebody/kit/components";
 
 	/* THE HIERARCHY: a filter over a tree, as every scene panel draws one.
 	   The rows are `Tree`'s (label, note, badges, kind, trailing, eye) and

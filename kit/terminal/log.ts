@@ -29,10 +29,20 @@
  *    find walks between them. For a log the first is what you want.
  */
 
-export type LogLevel = "log" | "info" | "warn" | "error" | "debug";
+/** The levels every console knows, coloured by `log.css`. */
+export type BuiltInLogLevel = "log" | "info" | "warn" | "error" | "debug";
 
-/** Every level, in the order the filter draws them. */
-export const LOG_LEVELS: readonly LogLevel[] = ["error", "warn", "info", "log", "debug"];
+/**
+ * A line's level: a built-in, or a tool's own ("success", "trace"). A tool's
+ * level is drawn with the `log-line <level>` and `log-level <level>` classes,
+ * so it gets a colour from the tool's CSS, and a key in the bar when the tool
+ * passes it in the bar's `levels`. The `string & {}` keeps the built-ins
+ * offered as completions.
+ */
+export type LogLevel = BuiltInLogLevel | (string & {});
+
+/** Every built-in level, in the order the filter draws them. */
+export const LOG_LEVELS: readonly BuiltInLogLevel[] = ["error", "warn", "info", "log", "debug"];
 
 /** One line as the pane holds it. `seq` is the stable key for a keyed render. */
 export type LogEntry = {
@@ -107,10 +117,10 @@ export const appendEntry = (
 /** How many lines of each level are held. Repeats count once — the badge on
  *  the line says how many, and a count of 400 next to one line is a lie about
  *  how much there is to read. */
-export const countByLevel = (entries: readonly LogEntry[]): Record<LogLevel, number> => {
-	const counts: Record<LogLevel, number> = { log: 0, info: 0, warn: 0, error: 0, debug: 0 };
+export const countByLevel = (entries: readonly LogEntry[]): Record<BuiltInLogLevel, number> & Record<string, number> => {
+	const counts: Record<BuiltInLogLevel, number> & Record<string, number> = { log: 0, info: 0, warn: 0, error: 0, debug: 0 };
 	for (const entry of entries) {
-		counts[entry.level] += 1;
+		counts[entry.level] = (counts[entry.level] ?? 0) + 1;
 	}
 	return counts;
 };

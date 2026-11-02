@@ -24,10 +24,10 @@
 		type LogEntry,
 		type LogInput,
 		type LogLevel,
-	} from "@samthesomebody/kit/terminal/log.ts";
-	import type { TerminalLinksPort } from "@samthesomebody/kit/terminal/types.ts";
+		type TerminalLinksPort,
+	} from "@samthesomebody/kit/terminal/core";
 
-	export type { LogEntry, LogInput, LogLevel } from "@samthesomebody/kit/terminal/log.ts";
+	export type { BuiltInLogLevel, LogEntry, LogInput, LogLevel } from "@samthesomebody/kit/terminal/core";
 
 	/** Lines held by a {@link ConsoleLog}: a boot plus a few rounds, with room to spare. */
 	const DEFAULT_LIMIT = 2000;
@@ -54,23 +54,32 @@
 
 	/** What the reader chose to see: levels, a text filter, and whether every repeat folds. */
 	export class ConsoleView {
-		readonly levels: SvelteSet<LogLevel>;
+		/* The levels turned OFF. Kept this way round so a tool's own level
+		   ("success") shows from its first line, with no list to add it to. */
+		readonly hidden: SvelteSet<LogLevel>;
 		text = $state("");
 		collapse = $state(false);
 
+		/** `levels`: the built-in levels shown at first (all of them by default). */
 		constructor(options: { readonly levels?: readonly LogLevel[]; readonly collapse?: boolean } = {}) {
-			this.levels = new SvelteSet(options.levels ?? LOG_LEVELS);
+			const shown = new Set<LogLevel>(options.levels ?? LOG_LEVELS);
+			this.hidden = new SvelteSet(LOG_LEVELS.filter((level) => !shown.has(level)));
 			this.collapse = options.collapse ?? false;
 		}
 
+		shows(level: LogLevel): boolean {
+			return !this.hidden.has(level);
+		}
+
 		toggle(level: LogLevel): void {
-			if (this.levels.has(level)) this.levels.delete(level);
-			else this.levels.add(level);
+			if (this.hidden.has(level)) this.hidden.delete(level);
+			else this.hidden.add(level);
 		}
 
 		/** The lines to draw, oldest first. */
 		shown(entries: readonly LogEntry[]): readonly LogEntry[] {
-			const filtered = filterEntries(entries, { levels: this.levels, text: this.text });
+			const levels = new Set(entries.map((entry) => entry.level).filter((level) => this.shows(level)));
+			const filtered = filterEntries(entries, { levels, text: this.text });
 			return this.collapse ? collapseEntries(filtered) : filtered;
 		}
 	}
@@ -79,7 +88,8 @@
 	export interface ConsoleContext {
 		readonly entries: readonly LogEntry[];
 		readonly shown: readonly LogEntry[];
-		readonly counts: Record<LogLevel, number>;
+		/** Lines per level; a level with none may be missing. */
+		readonly counts: Readonly<Record<string, number>>;
 		readonly view: ConsoleView;
 		readonly picked: LogEntry | undefined;
 		readonly links: TerminalLinksPort | undefined;
@@ -109,7 +119,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 
-	import { countByLevel, entryKey } from "@samthesomebody/kit/terminal/log.ts";
+	import { countByLevel, entryKey } from "@samthesomebody/kit/terminal/core";
 
 	import "@samthesomebody/kit/components/controls.css";
 	import "@samthesomebody/kit/terminal/log.css";

@@ -64,7 +64,7 @@
 	{#if busy}
 		<!-- the kit's busy marker is the dock's status light, not a second
 		     spinner: one device for "something is happening here". -->
-		<i class="dock-tab-dot" data-status="busy" aria-hidden="true"></i>
+		<i class="kit-status-dot" data-status="busy" aria-hidden="true"></i>
 	{:else if icon}
 		<Icon name={icon} on={pressed === true || checked === true} />
 	{/if}

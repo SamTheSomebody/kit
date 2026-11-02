@@ -1,24 +1,12 @@
-/* THE CONTROL KIT'S VISUAL LAYER — every control's rules, one file each.
-   Contract: docs/specs/2026-09-04-control-kit-design.md; the signed artifact
-   is frozen at tools/ui/fidelity/reference.html.
-
-   WHY IT LIVES IN tools/gameEngine/ AND NOT IN tools/ui/. Two worlds need these
-   rules: the tools, through the Svelte components in `tools/ui/components/`,
-   and the games' DEV panels, which are plain DOM mounted into a dock tab and
-   MAY NOT import across the tools boundary (`checkLayers`; the same reason
-   `tools/editor/host` exists). A package here is reachable by
-   both by npm name, which is exactly how `dock` and `terminal` already work
-   — `tool-ui` names all three as dependencies and nothing is copied.
-
+/* THE CONTROL KIT'S VISUAL LAYER: every control's rules, one file each.
+   Each Svelte control imports its own sheet (and `controls.css`), so this
+   index is for plain-DOM consumers that draw the kit's classes themselves.
    The class contract is the contract. These rules are global on purpose: a
-   scoped rule cannot reach a child component's root, and the fidelity check
-   is an identity test against the artifact's own class names. The isolation
-   that matters is per FILE — an edit to one control cannot reach another,
-   which is the single thing the 4,532-line artifact could not promise.
-
+   scoped rule cannot reach a child component's root. The isolation that
+   matters is per FILE, so an edit to one control cannot reach another.
    Colour is `--tool-*` and geometry is `--dock-*`; there is no literal
-   anywhere in here (`checkToolUi` enforces the first, and both kits read the
-   same tokens, so reskinning `tools/ui/tokens.css` reskins every control). */
+   anywhere in here, so reskinning the tokens (`vars.css`) reskins every
+   control. Design history: game-mono `docs/specs/2026-09-04-control-kit-design.md`. */
 
 @import './controls.css';
 

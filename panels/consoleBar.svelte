@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 
-	import { LOG_LEVELS, type LogLevel } from "@samthesomebody/kit/terminal/log.ts";
+	import { LOG_LEVELS, type LogLevel } from "@samthesomebody/kit/terminal/core";
 	import ConsoleKey from "./consoleKey.svelte";
 	import { getConsoleContext } from "./console.svelte";
 
@@ -15,7 +15,7 @@
 		collapse = true,
 		actions,
 	}: {
-		/** The level keys to draw. */
+		/** The level keys to draw: the built-ins, and any level of the tool's own. */
 		levels?: readonly LogLevel[];
 		/** Offer Collapse: every identical line folded into one. */
 		collapse?: boolean;
@@ -41,13 +41,14 @@
 	/>
 	<div class="log-levels">
 		{#each levels as level (level)}
-			{@const count = context.counts[level]}
+			{@const count = context.counts[level] ?? 0}
+			{@const shown = context.view.shows(level)}
 			<ConsoleKey
 				label="{level} {count}"
 				{level}
-				pressed={context.view.levels.has(level)}
+				pressed={shown}
 				quiet={count === 0}
-				tip={context.view.levels.has(level) ? `Hide ${level} lines` : `Show ${level} lines`}
+				tip={shown ? `Hide ${level} lines` : `Show ${level} lines`}
 				onclick={() => context.view.toggle(level)}
 			/>
 		{/each}

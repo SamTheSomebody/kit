@@ -17,8 +17,6 @@
     },
     "./package.json": "./package.json",
     "./dock.css": "./dock.css",
-    "./compareStage.css": "./compareStage.css",
-    "./timelineSheet.css": "./timelineSheet.css",
     "./dock.svelte": "./dock.svelte"
   },
   "files": [

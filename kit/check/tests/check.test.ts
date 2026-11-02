@@ -17,6 +17,20 @@ describe("checkCss", () => {
 		).toEqual([]);
 	});
 
+	it("finds named colours where a colour goes, and nowhere else", () => {
+		expect(rules(checkCss(`.a { color: white; border: 1px solid Red; box-shadow: 0 0 2px black; }`))).toEqual([
+			"color",
+			"color",
+			"color",
+		]);
+		expect(checkCss(`.a { color: currentColor; background: transparent; animation-name: tomato; }`)).toEqual([]);
+	});
+
+	it("holds the font shorthand and uppercase in any case to the type scale", () => {
+		expect(rules(checkCss(`.a { font: 12px/1 sans-serif; text-transform: UPPERCASE; }`))).toEqual(["type", "type"]);
+		expect(checkCss(`.a { font: inherit; }`)).toEqual([]);
+	});
+
 	it("lets a kit-allow cover the next declaration, a trailing one, or a whole block", () => {
 		const css = `.a {
 	/* kit-allow structure: canvas host */

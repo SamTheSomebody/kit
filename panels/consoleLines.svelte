@@ -1,7 +1,13 @@
 <script lang="ts">
-	import { matchTerminalLinks } from "@samthesomebody/kit/terminal/links.ts";
-	import { entryKey, isPinnedToBottom, type LogEntry } from "@samthesomebody/kit/terminal/log.ts";
-	import type { TerminalLinkTarget } from "@samthesomebody/kit/terminal/types.ts";
+	import type { Snippet } from "svelte";
+
+	import {
+		entryKey,
+		isPinnedToBottom,
+		matchTerminalLinks,
+		type LogEntry,
+		type TerminalLinkTarget,
+	} from "@samthesomebody/kit/terminal/core";
 	import { getConsoleContext } from "./console.svelte";
 
 	/* The lines, as the log pane draws them: oldest first, the clock in a
@@ -11,9 +17,12 @@
 	   it back. */
 	let {
 		empty = "Nothing logged yet.",
+		trailing,
 	}: {
 		/** What a console with no lines at all says. */
 		empty?: string;
+		/** The tool's own cells at the end of a line (a badge, an icon), before the repeat count and source. */
+		trailing?: Snippet<[LogEntry]>;
 	} = $props();
 
 	const context = getConsoleContext();
@@ -95,8 +104,9 @@
 									}}>{segment.text}</button
 								>{:else}{segment.text}{/if}{/each}</span
 					>
-					{#if entry.repeats > 1 || entry.source}
+					{#if trailing || entry.repeats > 1 || entry.source}
 						<span class="log-trailing">
+							{@render trailing?.(entry)}
 							{#if entry.repeats > 1}
 								<span class="log-repeats" title="Arrived {entry.repeats} times">×{entry.repeats}</span>
 							{/if}

@@ -32,11 +32,17 @@
       "svelte": "./components/index.ts",
       "default": "./components/index.ts"
     },
+    "./editors": {
+      "svelte": "./components/editors.ts",
+      "default": "./components/editors.ts"
+    },
+    "./tooltip": "./components/tooltip.ts",
     "./components/index.css": "./components/index.css",
     "./components/*.css": "./components/*.css",
     "./components/*.svelte": "./components/*.svelte",
     "./components/*.ts": "./components/*.ts",
     "./terminal": "./terminal/index.ts",
+    "./terminal/core": "./terminal/core.ts",
     "./terminal/*.css": "./terminal/*.css",
     "./terminal/*.ts": "./terminal/*.ts"
   },
