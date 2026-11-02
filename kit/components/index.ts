@@ -90,6 +90,15 @@ export {
 	visibleRows,
 } from "./tree";
 export type { BranchRow, FoldGesture, MarkState, TreeBadge, TreeNode, TreeRow } from "./tree";
+export {
+	expireNotifications,
+	nextNotificationDeadline,
+	NOTIFICATION_ERROR_LIFETIME_MILLISECONDS,
+	NOTIFICATION_LIFETIME_MILLISECONDS,
+	NOTIFICATION_MAXIMUM,
+	pushNotification,
+} from "./notification";
+export type { NotificationEntry, NotificationSeverity, PushOptions } from "./notification";
 export { createRegistry } from "./registry";
 export type { Registry } from "./registry";
 /* Types only: the registry of editors itself imports the editor components,

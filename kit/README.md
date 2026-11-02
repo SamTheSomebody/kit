@@ -89,13 +89,13 @@ Import components by their `.svelte` path, as above. Logic comes from an entry p
 | Import | What |
 |---|---|
 | `@samthesomebody/kit` | layout recipes (`createRow`, …) |
-| `@samthesomebody/kit/components` | control logic: keymap, menu, scroll, scrub, slider, tree, `createRegistry`, and the editor/property types. No Svelte, no CSS, safe in a game build. |
+| `@samthesomebody/kit/components` | control logic: keymap, menu, notifications, scroll, scrub, slider, tree, `createRegistry`, and the editor/property types. No Svelte, no CSS, safe in a game build. |
 | `@samthesomebody/kit/editors` | the type-editor registry (`editors`, `defineEditor`) and its types |
 | `@samthesomebody/kit/tooltip` | the `tooltip` action |
 | `@samthesomebody/kit/terminal/core` | the log model, link matcher and port types, without xterm |
 | `@samthesomebody/kit/terminal` | all of the above plus the VT and log panes |
 
-Deep `.ts` paths (`@samthesomebody/kit/components/editors.ts`, `…/terminal/log.ts`) still resolve in 0.4 but are deprecated and will be removed in 0.5.
+Deep `.ts` paths (`@samthesomebody/kit/components/editors.ts`, `…/terminal/log.ts`) are not exported (since 0.5): every module a consumer needs is behind one of the entries above, and the rest are the kit's internals.
 
 The code ships as TypeScript source, so a consumer needs a TS-aware bundler (Vite, SvelteKit) with `moduleResolution: "bundler"`.
 
