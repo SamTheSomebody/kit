@@ -1,5 +1,19 @@
 # @samthesomebody/dock
 
+## 0.3.0
+
+### Minor Changes
+
+- 60da21f: Per-pane tab strip modes. A leaf's `strip` (`"always"` | `"never"`, absent = `"auto"`) overrides the root-solo and focus-mode rules, round-trips in the serialized layout, is validated by `parseLayout`, and is set from the pane menu (Layout › Tab strip). A strip-less pane keeps its tabs, close, float, split and collapse in the context menu, shows its ▸ stub when collapsed, and a float keeps its ⠿ grip on the window corner.
+
+### Patch Changes
+
+- Updated dependencies [7ad2b33]
+- Updated dependencies [30340c1]
+- Updated dependencies [3ca2822]
+- Updated dependencies [c80461b]
+  - @samthesomebody/kit@0.6.0
+
 ## 0.2.1
 
 ### Patch Changes
