@@ -2,12 +2,9 @@
 	import { untrack, type Snippet } from "svelte";
 
 	import Container from "@samthesomebody/kit/container.svelte";
-	import Slot from "@samthesomebody/kit/slot.svelte";
 	import Empty from "@samthesomebody/kit/components/empty.svelte";
-	import Field from "@samthesomebody/kit/components/field.svelte";
-	import Label from "@samthesomebody/kit/components/label.svelte";
+	import FilterRow from "@samthesomebody/kit/components/filterRow.svelte";
 	import Pane from "@samthesomebody/kit/components/pane.svelte";
-	import Row from "@samthesomebody/kit/components/row.svelte";
 	import Tree from "@samthesomebody/kit/components/tree.svelte";
 	import { ancestorIds, branchIds, filterTree, nodeCount, type TreeNode } from "@samthesomebody/kit/components";
 
@@ -126,17 +123,12 @@
 </script>
 
 <Pane fill>
-	<Container size="fit">
-		<Row>
-			<Slot size="fill">
-				<Field type="search" {placeholder} bind:value={query} />
-			</Slot>
-			{#if needle !== ""}
-				<Label text="{nodeCount(shown)}/{nodeCount(nodes)}" />
-			{/if}
-			{@render actions?.()}
-		</Row>
-	</Container>
+	<FilterRow
+		bind:value={query}
+		{placeholder}
+		count={needle === "" ? undefined : `${nodeCount(shown)}/${nodeCount(nodes)}`}
+		trailing={actions}
+	/>
 	<Container size="fill">
 		{#if shown.length === 0}
 			<Empty text={needle === "" ? empty : "Nothing matches the filter"} />
