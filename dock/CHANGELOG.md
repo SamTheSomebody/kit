@@ -1,5 +1,13 @@
 # @samthesomebody/dock
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [975bcca]
+- Updated dependencies [07db945]
+  - @samthesomebody/kit@0.5.0
+
 ## 0.2.0
 
 ### Minor Changes
