@@ -76,4 +76,13 @@ export const folds = createFoldStore('my-tool:folds');
 <InspectorSection id="transform" title="Transform" store={folds}>…</InspectorSection>
 ```
 
+The Inspector is **dense**, Unity-style (`@samthesomebody/kit/components/dense.css`, turned on with `setDense()`):
+
+- one label column for the whole pane, its width a share of the pane, with nested sections' indents taken out of their labels so values line up at every depth;
+- 18px rows, 2px apart, each value in a box;
+- a top-level section is a tinted bar, and a nested one is an indented twisty and caption;
+- booleans are checkboxes, and a number line's label scrubs its value.
+
+A value that is a set of keys can wrap them in `<span class="kit-chips">`.
+
 Without `store`, sections share the default store (key `kit-inspector-folds`). A section with no `title` is the bare rule and doesn't fold.

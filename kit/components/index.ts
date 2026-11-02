@@ -49,6 +49,7 @@ export {
 	resolveCommand,
 } from "./keymap";
 export type { BindKeymapOptions, Chord, ChordEvent, Command, Keymap } from "./keymap";
+export { isDense, setDense } from "./density";
 export { bindScroll, scrollFromRail, scrollState, withinReach } from "./scroll";
 export type { BoundScroll, ScrollMetrics, ScrollState } from "./scroll";
 export { bindScrub, PIXELS_PER_STEP, SCRUB_TIP, scrubMagnitude, scrubText, stepText } from "./scrub";
