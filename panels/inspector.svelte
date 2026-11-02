@@ -17,7 +17,7 @@
 	   `InspectorSection`s and `Property` lines, or a view that brings its own
 	   bar and scroller. Nothing selected, it says what to select.
 	   The body is dense (`dense.css`): one label column for the whole pane,
-	   18px boxed values and a bar per top-level section, as Unity draws it. */
+	   18px rows and a bar per top-level section, as Unity draws it. */
 	let {
 		name,
 		type,

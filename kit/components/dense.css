@@ -12,8 +12,8 @@
      zig-zagged down the pane. Here the width is a share of the pane
      (`--kit-label-width`), and a nested section's indent comes out of its
      labels, so every value starts on the same line at every depth.
-   - ROWS ARE 18PX with 2px between them, and a value sits in a box: an inset
-     plate with a hairline, the way an inspector shows what can be typed.
+   - ROWS ARE 18PX with 2px between them. The values keep the kit's own look
+     (a field is still a rule under its line), only shorter.
    - A TOP-LEVEL SECTION IS A COMPONENT BAR: tinted, full width, the twisty
      and a bold caption, its keys at the far end, a hairline above it. A
      nested one is just its twisty and caption, muted, its body indented. */
@@ -76,49 +76,23 @@
 	cursor: ew-resize;
 }
 
-/* ── boxed values ─────────────────────────────────────────────────────── */
+/* ── values ───────────────────────────────────────────────────────────
+   The kit's own field (a rule under a line of type, its hover wash and
+   accent focus) at row height: no block padding, the line plus its rule. */
 .kit-dense .kit-field {
 	min-height: var(--kit-dense-row);
 	padding-block: 0;
-	padding-inline: var(--dock-pad-tight);
-	gap: var(--tool-space-1);
-	background: var(--tool-panel);
-	border: var(--dock-divider) solid var(--tool-border);
-	border-radius: 2px;
 }
-.kit-dense .kit-field input,
-.kit-dense .kit-field select {
-	height: calc(var(--kit-dense-row) - 2 * var(--dock-divider));
-	line-height: calc(var(--kit-dense-row) - 2 * var(--dock-divider));
-}
-.kit-dense .kit-field:hover,
-.kit-dense .kit-field.is-hover {
-	background: var(--tool-panel);
-	border-color: var(--tool-muted);
-}
-.kit-dense .kit-field:focus-within,
-.kit-dense .kit-field.is-focus {
-	background: var(--tool-panel);
-	border-color: var(--tool-accent);
-}
-.kit-dense .kit-field.invalid,
-.kit-dense .kit-field.invalid:hover,
-.kit-dense .kit-field.invalid:focus-within {
-	border-color: var(--tool-danger);
-}
-.kit-dense .kit-field.disabled,
-.kit-dense .kit-field:has(:disabled) {
-	border-color: var(--tool-border);
+.kit-dense .kit-field:not(.multiline) input,
+.kit-dense .kit-field:not(.multiline) select {
+	height: calc(var(--kit-dense-row) - var(--dock-divider));
+	line-height: calc(var(--kit-dense-row) - var(--dock-divider));
 }
 .kit-dense .kit-field-stepper {
-	height: calc(var(--kit-dense-row) - 2 * var(--dock-divider));
-}
-.kit-dense .kit-field-action {
-	padding-inline: var(--tool-space-1);
-	margin-inline-start: 0;
+	height: calc(var(--kit-dense-row) - var(--dock-divider));
 }
 .kit-dense .kit-field.multiline {
-	padding: var(--dock-divider) var(--dock-pad-tight);
+	padding-block: var(--dock-pad-tight);
 }
 /* The hang a message makes is a dense row, not a body line and a half. */
 .kit-dense .kit-field-block:has(> .kit-field-message) {
@@ -129,7 +103,7 @@
 	padding-block-start: 0;
 	line-height: var(--kit-dense-row);
 }
-/* A slider is its track and a boxed readout. */
+/* A slider is its track and its readout, a row tall. */
 .kit-dense .kit-slider {
 	min-height: var(--kit-dense-row);
 }

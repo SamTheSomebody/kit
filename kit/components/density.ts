@@ -1,8 +1,7 @@
 /* DENSITY — whether a control sits in a dense pane (`dense.css`, the
  * Inspector's). Most of density is CSS; this is for the few controls whose
- * MARKUP changes with it: a boolean is a key in a toolbar and a checkbox in
- * an inspector row, and a number line's label scrubs. Set once by the pane,
- * read by whatever it renders. */
+ * BEHAVIOUR changes with it: a number line's label scrubs its value, as
+ * Unity's does. Set once by the pane, read by whatever it renders. */
 
 import { getContext, setContext } from "svelte";
 

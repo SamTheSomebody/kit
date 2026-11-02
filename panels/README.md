@@ -79,9 +79,9 @@ export const folds = createFoldStore('my-tool:folds');
 The Inspector is **dense**, Unity-style (`@samthesomebody/kit/components/dense.css`, turned on with `setDense()`):
 
 - one label column for the whole pane, its width a share of the pane, with nested sections' indents taken out of their labels so values line up at every depth;
-- 18px rows, 2px apart, each value in a box;
+- 18px rows, 2px apart, each value in the kit's own look;
 - a top-level section is a tinted bar, and a nested one is an indented twisty and caption;
-- booleans are checkboxes, and a number line's label scrubs its value.
+- a number line's label scrubs its value.
 
 A value that is a set of keys can wrap them in `<span class="kit-chips">`.
 
