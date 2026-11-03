@@ -3,7 +3,9 @@
 
 	import LayoutRow from "../row.svelte";
 	import Slot from "../slot.svelte";
+	import { isDense } from "./density";
 	import Label from "./label.svelte";
+	import { bindScrub, SCRUB_TIP } from "./scrub";
 
 	import "./controls.css";
 	import "./tooltip.css";
@@ -39,18 +41,57 @@
 		status?: Snippet;
 		children: Snippet;
 	} = $props();
+
+	/* In a dense pane the label of a number line scrubs it, as Unity's does:
+	   the drag types into the line's one number field, so the field's own
+	   handling (clamping aside) is all that runs. A line with no number
+	   field, or several (a vector), keeps a plain label. */
+	const dense = isDense();
+	let caption = $state<HTMLElement>();
+	let scrubs = $state(false);
+
+	$effect(() => {
+		if (!dense || caption === undefined || muted) return;
+		const row = caption.closest(".kit-row");
+		const inputs = row?.querySelectorAll<HTMLInputElement>(":scope > .kit-slot input[type='number']") ?? [];
+		const input = inputs.length === 1 ? inputs[0] : undefined;
+		if (input === undefined || input.disabled) return;
+		const bound = (text: string, fallback: number): number => (text === "" ? fallback : Number(text));
+		scrubs = true;
+		const unbind = bindScrub(caption, {
+			read: () => input.value,
+			write: (text) => {
+				const numeric = Number(text);
+				if (!Number.isFinite(numeric)) return;
+				const clamped = Math.min(
+					bound(input.max, Number.POSITIVE_INFINITY),
+					Math.max(bound(input.min, Number.NEGATIVE_INFINITY), numeric),
+				);
+				input.value = String(clamped);
+				input.dispatchEvent(new Event("input", { bubbles: true }));
+			},
+			step: () => (input.step === "" || input.step === "any" ? 1 : Number(input.step)),
+			click: () => input.focus(),
+		});
+		return () => {
+			scrubs = false;
+			unbind();
+		};
+	});
 </script>
 
 <LayoutRow>
 	<Label>
 		<span
 			{...data}
+			bind:this={caption}
 			class:changed
 			class:muted
+			class:scrubs
 			class:kit-tip={tip !== undefined}
 			class:below={tip !== undefined}
 			data-tip={tip}
-			title={tip}>{label}</span
+			title={tip ?? (scrubs ? SCRUB_TIP : label)}>{label}</span
 		>
 	</Label>
 	<Slot size="fill">

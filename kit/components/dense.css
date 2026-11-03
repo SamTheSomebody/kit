@@ -1,0 +1,213 @@
+/* Dense — the Inspector's density, Unity-style.
+   Promoted 2026-11-02 ([HUMAN] Sam: "The fields aren't tight enough… I'd like
+   to get this much closer to a unity style inspector").
+
+   Everything here is scoped under `.kit-dense`, which a pane opts into (the
+   panels Inspector does). Outside it the kit keeps its own rhythm: a field is
+   a rule under a line of type, and a section is a caption on a rule.
+
+   Inside it:
+   - ONE LABEL COLUMN for the whole pane. A fields grid sizes its labels to
+     its own longest, so every section had a different column and the values
+     zig-zagged down the pane. Here the width is a share of the pane
+     (`--kit-label-width`), and a nested section's indent comes out of its
+     labels, so every value starts on the same line at every depth.
+   - ROWS ARE 18PX with 2px between them. The values keep the kit's own look
+     (a field is still a rule under its line), only shorter.
+   - A TOP-LEVEL SECTION IS A COMPONENT BAR: tinted, full width, the twisty
+     and a bold caption, its keys at the far end, a hairline above it. A
+     nested one is just its twisty and caption, muted, its body indented. */
+
+.kit-dense {
+	container-type: inline-size;
+	--kit-dense-row: 18px;
+	--kit-dense-gap: 2px;
+	--kit-dense-indent: 12px;
+	/* Resolved where it is used, so `cqi` is the pane's width. */
+	--kit-label-width: clamp(72px, 38cqi, 180px);
+	--kit-dense-depth: 0;
+}
+
+/* ── one label column ─────────────────────────────────────────────────── */
+.kit-dense .kit-column[data-recipe='fields'] {
+	grid-template-columns:
+		max(40px, calc(var(--kit-label-width) - var(--kit-dense-depth) * var(--kit-dense-indent)))
+		minmax(0, 1fr);
+	row-gap: var(--kit-dense-gap);
+	/* A value taller than a row (wrapped keys, a multiline) keeps its label
+	   on its first line, as Unity's does. (Beats the recipe's own `place`.) */
+	align-items: start;
+}
+.kit-dense .kit-column[data-recipe='fields'][data-place] {
+	align-items: start;
+}
+.kit-dense .kit-column[data-recipe='fields'] > .kit-row > .kit-label {
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	line-height: var(--kit-dense-row);
+}
+.kit-dense .kit-column[data-recipe='fields'] .kit-slot {
+	gap: var(--dock-pad-tight);
+	min-height: var(--kit-dense-row);
+}
+/* A stack of field runs and block widgets spaces like rows, not like groups. */
+.kit-dense .kit-column[data-recipe='stack'] {
+	gap: var(--kit-dense-gap);
+}
+/* Facts take the same columns as fields. */
+.kit-dense .kit-meta {
+	grid-template-columns:
+		max(40px, calc(var(--kit-label-width) - var(--kit-dense-depth) * var(--kit-dense-indent)))
+		minmax(0, 1fr);
+	column-gap: 0;
+	row-gap: var(--kit-dense-gap);
+	line-height: var(--kit-dense-row);
+}
+.kit-dense .kit-meta dt {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	padding-inline-end: var(--dock-pad);
+}
+/* A label that scrubs its field (a number line) says so. */
+.kit-dense .kit-label .scrubs {
+	cursor: ew-resize;
+}
+
+/* ── values ───────────────────────────────────────────────────────────
+   The kit's own field (a rule under a line of type, its hover wash and
+   accent focus) at row height: no block padding, the line plus its rule. */
+.kit-dense .kit-field {
+	min-height: var(--kit-dense-row);
+	padding-block: 0;
+}
+.kit-dense .kit-field:not(.multiline) input,
+.kit-dense .kit-field:not(.multiline) select {
+	height: calc(var(--kit-dense-row) - var(--dock-divider));
+	line-height: calc(var(--kit-dense-row) - var(--dock-divider));
+}
+.kit-dense .kit-field-stepper {
+	height: calc(var(--kit-dense-row) - var(--dock-divider));
+}
+.kit-dense .kit-field.multiline {
+	padding-block: var(--dock-pad-tight);
+}
+/* The hang a message makes is a dense row, not a body line and a half. */
+.kit-dense .kit-field-block:has(> .kit-field-message) {
+	--kit-field-message-hang: var(--kit-dense-row);
+}
+.kit-dense .kit-column[data-recipe='fields'] .kit-field-message {
+	margin-block-start: 0;
+	padding-block-start: 0;
+	line-height: var(--kit-dense-row);
+}
+/* A slider is its track and its readout, a row tall. */
+.kit-dense .kit-slider {
+	min-height: var(--kit-dense-row);
+}
+
+/* ── keys ─────────────────────────────────────────────────────────────── */
+.kit-dense .btn {
+	padding: calc(var(--dock-divider) * 2) var(--dock-pad-tight);
+	line-height: calc(var(--kit-dense-row) - 6px);
+}
+.kit-dense .kit-check {
+	min-height: var(--kit-dense-row);
+}
+/* A value that is a set of keys (a list of events) wraps under itself. */
+.kit-dense .kit-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--kit-dense-gap);
+	min-width: 0;
+	padding-block: var(--kit-dense-gap);
+}
+
+/* ── sections ─────────────────────────────────────────────────────────── */
+.kit-dense .kit-section {
+	gap: var(--kit-dense-gap);
+}
+.kit-dense * + .kit-section {
+	margin-block-start: 0;
+}
+.kit-dense .kit-section-body {
+	gap: var(--kit-dense-gap);
+}
+.kit-dense .kit-section-title {
+	min-height: var(--kit-dense-row);
+	gap: var(--dock-pad-tight);
+	line-height: var(--kit-dense-row);
+}
+/* No rule: a bar or an indent says where a section starts. */
+.kit-dense .kit-section-title::after {
+	content: none;
+}
+.kit-dense .kit-section-status {
+	margin-inline-start: auto;
+	gap: var(--tool-space-1);
+}
+.kit-dense .kit-section-toggle {
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.kit-dense .kit-section.bare::before {
+	border-block-end-color: var(--tool-border);
+}
+
+/* The component bar: a section that is not inside another. It runs to the
+   pane's edges (`--kit-dense-bleed`, the padding of what holds it). */
+.kit-dense .kit-section:not(.kit-section-body .kit-section) > .kit-section-title {
+	margin-inline: calc(-1 * var(--kit-dense-bleed, 0px));
+	padding-inline: var(--kit-dense-bleed, 0px);
+	padding-block: var(--dock-divider);
+	background: color-mix(in srgb, var(--tool-panel-hover) 45%, var(--tool-panel));
+	border-block-start: var(--dock-divider) solid var(--tool-border);
+	font-weight: 600;
+}
+.kit-dense .kit-section:not(.kit-section-body .kit-section) > .kit-section-body {
+	padding-block: var(--tool-space-1) var(--dock-pad);
+}
+
+/* A nested section: its caption is muted, and its body steps in. Depth is
+   counted to four, which is deeper than any inspector reads. */
+.kit-dense .kit-section-body .kit-section-body {
+	padding-inline-start: var(--kit-dense-indent);
+	--kit-dense-depth: 1;
+}
+.kit-dense .kit-section-body .kit-section-body .kit-section-body {
+	--kit-dense-depth: 2;
+}
+.kit-dense .kit-section-body .kit-section-body .kit-section-body .kit-section-body {
+	--kit-dense-depth: 3;
+}
+.kit-dense .kit-section-body .kit-section-body .kit-section-body .kit-section-body .kit-section-body {
+	--kit-dense-depth: 4;
+}
+
+/* ── the pane ─────────────────────────────────────────────────────────── */
+/* Sections butt against each other (the bar is the break), and a bar bleeds
+   through the container's inline padding to the pane's edges. */
+.kit-dense {
+	--kit-dense-bleed: var(--dock-pad);
+}
+.kit-dense .kit-container {
+	gap: var(--kit-dense-gap);
+	padding-block: 0 var(--dock-pad);
+}
+.kit-dense .kit-container[data-pad='0'] {
+	--kit-dense-bleed: 0px;
+}
+/* Keys at a line's end tip leftwards, into the pane: a bubble hung right
+   would run past the edge (and an invisible one still widened the scroll). */
+.kit-dense .kit-icon.kit-tip::after,
+.kit-dense .kit-section-status .kit-tip::after {
+	left: auto;
+	right: 0;
+}
+.kit-dense .kit-container[data-size='fill'] {
+	overflow-x: hidden;
+}
