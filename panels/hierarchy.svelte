@@ -6,7 +6,14 @@
 	import FilterRow from "@samthesomebody/kit/components/filterRow.svelte";
 	import Pane from "@samthesomebody/kit/components/pane.svelte";
 	import Tree from "@samthesomebody/kit/components/tree.svelte";
-	import { ancestorIds, branchIds, filterTree, nodeCount, type TreeNode } from "@samthesomebody/kit/components";
+	import {
+		ancestorIds,
+		branchIds,
+		filterTree,
+		nodeCount,
+		type MovePosition,
+		type TreeNode,
+	} from "@samthesomebody/kit/components";
 
 	/* THE HIERARCHY: a filter over a tree, as every scene panel draws one.
 	   The rows are `Tree`'s (label, note, badges, kind, trailing, eye) and
@@ -26,6 +33,10 @@
 		placeholder = "Filter",
 		empty = "Nothing here",
 		onmark,
+		move = false,
+		canMove,
+		nests,
+		onmove,
 		trailing,
 		actions,
 	}: {
@@ -40,6 +51,11 @@
 		/* what an empty tree says */
 		empty?: string;
 		onmark?: (marked: Set<string>) => void;
+		/* drag rows to reorder and reparent them (`Tree`'s `move`); the owner applies `onmove` */
+		move?: boolean;
+		canMove?: (node: TreeNode) => boolean;
+		nests?: (node: TreeNode) => boolean;
+		onmove?: (move: { id: string; target: string; position: MovePosition }) => void;
 		trailing?: Snippet<[TreeNode]>;
 		/* the tool's own controls, after the filter */
 		actions?: Snippet;
@@ -140,6 +156,10 @@
 				bind:marked
 				{eye}
 				{onmark}
+				{move}
+				{canMove}
+				{nests}
+				{onmove}
 				{trailing}
 			/>
 		{/if}

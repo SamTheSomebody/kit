@@ -74,6 +74,7 @@ export {
 	ancestorIds,
 	branchIds,
 	branchRows,
+	canMoveTo,
 	descendantIds,
 	filterTree,
 	dropSide,
@@ -84,6 +85,7 @@ export {
 	markCount,
 	markState,
 	moveNode,
+	moveZone,
 	nodeCount,
 	rowForKey as treeRowForKey,
 	setMark,
@@ -91,7 +93,16 @@ export {
 	treeNodeMatches,
 	visibleRows,
 } from "./tree";
-export type { BranchRow, FoldGesture, MarkSolo, MarkState, TreeBadge, TreeNode, TreeRow } from "./tree";
+export type {
+	BranchRow,
+	FoldGesture,
+	MarkSolo,
+	MarkState,
+	MovePosition,
+	TreeBadge,
+	TreeNode,
+	TreeRow,
+} from "./tree";
 export {
 	expireNotifications,
 	nextNotificationDeadline,

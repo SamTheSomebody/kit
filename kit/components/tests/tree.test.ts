@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { ancestorIds, branchIds, filterTree, nodeCount, toggleSolo, type TreeNode } from "../tree.ts";
+import {
+	ancestorIds,
+	branchIds,
+	canMoveTo,
+	filterTree,
+	moveZone,
+	nodeCount,
+	toggleSolo,
+	type TreeNode,
+} from "../tree.ts";
 
 const tree: TreeNode[] = [
 	{ id: "a", label: "board", kind: "container", children: [{ id: "a1", label: "reel", note: "› content" }] },
@@ -73,5 +82,29 @@ describe("toggleSolo", () => {
 		const again = toggleSolo(edited, b, first.solo);
 		expect([...again.marked]).toEqual(["b"]);
 		expect([...again.solo?.before ?? []].sort()).toEqual(["b", "c"]);
+	});
+});
+
+describe("moveZone", () => {
+	const box = { top: 100, height: 20 };
+
+	it("nests in a row's middle half and places beside it at the edges", () => {
+		expect(moveZone(102, box, true)).toBe("before");
+		expect(moveZone(110, box, true)).toBe("inside");
+		expect(moveZone(118, box, true)).toBe("after");
+	});
+
+	it("splits in halves when the row can't take children", () => {
+		expect(moveZone(109, box, false)).toBe("before");
+		expect(moveZone(111, box, false)).toBe("after");
+	});
+});
+
+describe("canMoveTo", () => {
+	it("refuses itself and its own subtree, takes anywhere else", () => {
+		expect(canMoveTo(tree, "a", "a")).toBe(false);
+		expect(canMoveTo(tree, "a", "a1")).toBe(false);
+		expect(canMoveTo(tree, "a1", "b")).toBe(true);
+		expect(canMoveTo(tree, "b", "a1")).toBe(true);
 	});
 });

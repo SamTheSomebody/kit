@@ -254,6 +254,20 @@
 .kit-tree-row.dragging {
 	opacity: var(--dock-drag-opacity);
 }
+/* The Hierarchy's move (`move`): the same bar before or after, and the row
+   outlined when the drop nests INSIDE it. */
+.kit-tree-row.movemark {
+	box-shadow: inset 0 var(--dock-tab-underline) 0 var(--tool-accent);
+}
+.kit-tree-row.movemark-after {
+	box-shadow: inset 0 calc(-1 * var(--dock-tab-underline)) 0 var(--tool-accent);
+}
+.kit-tree-row.movemark-inside {
+	box-shadow: inset 0 0 0 var(--dock-tab-underline) var(--tool-accent);
+}
+.kit-tree-row.moving {
+	opacity: var(--dock-drag-opacity);
+}
 /* The grip TAKES THE TWISTY'S COLUMN. Both are 12px, so a leaf row that
    can be dragged puts the grip where the twisty would have been rather
    than beside a hidden one — which is what it was doing, and it pushed
