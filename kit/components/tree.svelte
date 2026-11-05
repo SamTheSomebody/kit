@@ -239,18 +239,36 @@
 	let moving = $state<string | undefined>();
 	let moveAt = $state<{ id: string; position: MovePosition } | undefined>();
 	let swallowClick = false;
+	/* Stops listening for the press's release (set while a row is pressed). */
+	let unlisten: (() => void) | undefined;
+
+	/* The window and body the tree is drawn in, not this module's: a tool that one
+	   realm mounts into another's page (the docked editor's frame) gets its pointer
+	   events in the page's window, which <svelte:window> would not hear. */
+	const ownWindow = (): Window => treeElement?.ownerDocument.defaultView ?? window;
 
 	const pressRow = (node: TreeNode, event: PointerEvent): void => {
+		swallowClick = false;
 		if (!move || event.button !== 0 || (canMove !== undefined && !canMove(node))) return;
 		if ((event.target as HTMLElement).closest("button, label, input")) return;
 		press = { id: node.id, x: event.clientX, y: event.clientY };
+		unlisten?.();
+		const view = ownWindow();
+		view.addEventListener("pointerup", endMove);
+		view.addEventListener("pointercancel", cancelMove);
+		view.addEventListener("blur", cancelMove);
+		unlisten = () => {
+			view.removeEventListener("pointerup", endMove);
+			view.removeEventListener("pointercancel", cancelMove);
+			view.removeEventListener("blur", cancelMove);
+		};
 	};
 
 	const overMove = (node: TreeNode, event: PointerEvent): void => {
 		if (press !== undefined && moving === undefined) {
 			if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < MOVE_SLOP) return;
 			moving = press.id;
-			document.body.classList.add("reordering");
+			ownWindow().document.body.classList.add("reordering");
 		}
 		if (moving === undefined) return;
 		if (!canMoveTo(nodes, moving, node.id)) {
@@ -263,21 +281,23 @@
 
 	const endMove = (): void => {
 		if (moving !== undefined) {
+			/* the click this release makes, if any, comes in the same task */
 			swallowClick = true;
+			ownWindow().setTimeout(() => (swallowClick = false), 0);
 			if (moveAt !== undefined) onmove?.({ id: moving, target: moveAt.id, position: moveAt.position });
 		}
 		cancelMove();
 	};
 
 	const cancelMove = (): void => {
-		if (moving !== undefined) document.body.classList.remove("reordering");
+		unlisten?.();
+		unlisten = undefined;
+		if (moving !== undefined) ownWindow().document.body.classList.remove("reordering");
 		press = undefined;
 		moving = undefined;
 		moveAt = undefined;
 	};
-	onDestroy(() => {
-		if (moving !== undefined) cancelMove();
-	});
+	onDestroy(() => cancelMove());
 
 	/* One row is in the tab order: the selected one, or the first while
 	   nothing is selected, so the tree can be reached from the keyboard at
@@ -318,20 +338,7 @@
 	};
 </script>
 
-<svelte:window
-	onpointerup={() => {
-		endDrag();
-		endMove();
-	}}
-	onpointercancel={() => {
-		cancelDrag();
-		cancelMove();
-	}}
-	onblur={() => {
-		if (drag) cancelDrag();
-		cancelMove();
-	}}
-/>
+<svelte:window onpointerup={endDrag} onpointercancel={cancelDrag} onblur={() => drag && cancelDrag()} />
 
 <div class="kit-tree" class:select role="tree" tabindex="-1" onkeydown={onKey} bind:this={treeElement}>
 	{#each rows as row (row.node.id)}
