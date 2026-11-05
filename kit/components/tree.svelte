@@ -2,6 +2,7 @@
 	import {
 		type IconName,
 		branchRows,
+		canMoveTo,
 		crossedTo,
 		dropSide,
 		foldAll,
@@ -10,12 +11,14 @@
 		markCount,
 		markState,
 		moveNode,
+		moveZone,
 		treeRowForKey,
 		setMark,
 		stroke,
 		toggleSolo,
 		visibleRows,
 		type MarkSolo,
+		type MovePosition,
 		type TreeNode,
 	} from "./index.ts";
 
@@ -59,11 +62,15 @@
 		selected = $bindable<string | undefined>(undefined),
 		select = false,
 		reorder = false,
+		move = false,
+		canMove,
+		nests,
 		mark = "visible",
 		eye = true,
 		disabled = false,
 		onmark,
 		onreorder,
+		onmove,
 		trailing,
 	}: {
 		nodes: TreeNode[];
@@ -74,6 +81,14 @@
 		/* the multi-select form: checkboxes and a count per parent */
 		select?: boolean;
 		reorder?: boolean;
+		/* the Hierarchy's drag: a row dragged past a few pixels moves, before or after
+		   another row or INTO it, across parents. The tree doesn't change `nodes`: the
+		   owner applies `onmove` to its data and hands the tree its new shape. */
+		move?: boolean;
+		/* whether a row may be dragged (default: every row) */
+		canMove?: (node: TreeNode) => boolean;
+		/* whether a row takes children dropped into it (default: every row) */
+		nests?: (node: TreeNode) => boolean;
 		/* which icon carries the mark in the plain form */
 		mark?: IconName;
 		/* the seen/not-seen control. Off for a list that only selects. */
@@ -81,6 +96,7 @@
 		disabled?: boolean;
 		onmark?: (marked: Set<string>) => void;
 		onreorder?: (nodes: TreeNode[]) => void;
+		onmove?: (move: { id: string; target: string; position: MovePosition }) => void;
 		/* the row's own end: a value column, an action. After the kind, before the eye. */
 		trailing?: Snippet<[TreeNode]>;
 	} = $props();
@@ -212,6 +228,77 @@
 		if (drag) cancelDrag();
 	});
 
+	/* ── move ────────────────────────────────────────────────────────────
+	   Unity's Hierarchy: press a row and drag it past MOVE_SLOP pixels, and it
+	   moves; a press that doesn't travel is a click and selects. The bar
+	   marks before / after, an outline marks INSIDE (a new last child). A drop
+	   on itself or its own subtree is refused, and so is one into a row that
+	   doesn't nest. The click that ends a drag selects nothing. */
+	const MOVE_SLOP = 4;
+	let press = $state<{ id: string; x: number; y: number } | undefined>();
+	let moving = $state<string | undefined>();
+	let moveAt = $state<{ id: string; position: MovePosition } | undefined>();
+	let swallowClick = false;
+	/* Stops listening for the press's release (set while a row is pressed). */
+	let unlisten: (() => void) | undefined;
+
+	/* The window and body the tree is drawn in, not this module's: a tool that one
+	   realm mounts into another's page (the docked editor's frame) gets its pointer
+	   events in the page's window, which <svelte:window> would not hear. */
+	const ownWindow = (): Window => treeElement?.ownerDocument.defaultView ?? window;
+
+	const pressRow = (node: TreeNode, event: PointerEvent): void => {
+		swallowClick = false;
+		if (!move || event.button !== 0 || (canMove !== undefined && !canMove(node))) return;
+		if ((event.target as HTMLElement).closest("button, label, input")) return;
+		press = { id: node.id, x: event.clientX, y: event.clientY };
+		unlisten?.();
+		const view = ownWindow();
+		view.addEventListener("pointerup", endMove);
+		view.addEventListener("pointercancel", cancelMove);
+		view.addEventListener("blur", cancelMove);
+		unlisten = () => {
+			view.removeEventListener("pointerup", endMove);
+			view.removeEventListener("pointercancel", cancelMove);
+			view.removeEventListener("blur", cancelMove);
+		};
+	};
+
+	const overMove = (node: TreeNode, event: PointerEvent): void => {
+		if (press !== undefined && moving === undefined) {
+			if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < MOVE_SLOP) return;
+			moving = press.id;
+			ownWindow().document.body.classList.add("reordering");
+		}
+		if (moving === undefined) return;
+		if (!canMoveTo(nodes, moving, node.id)) {
+			moveAt = undefined;
+			return;
+		}
+		const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+		moveAt = { id: node.id, position: moveZone(event.clientY, box, nests?.(node) ?? true) };
+	};
+
+	const endMove = (): void => {
+		if (moving !== undefined) {
+			/* the click this release makes, if any, comes in the same task */
+			swallowClick = true;
+			ownWindow().setTimeout(() => (swallowClick = false), 0);
+			if (moveAt !== undefined) onmove?.({ id: moving, target: moveAt.id, position: moveAt.position });
+		}
+		cancelMove();
+	};
+
+	const cancelMove = (): void => {
+		unlisten?.();
+		unlisten = undefined;
+		if (moving !== undefined) ownWindow().document.body.classList.remove("reordering");
+		press = undefined;
+		moving = undefined;
+		moveAt = undefined;
+	};
+	onDestroy(() => cancelMove());
+
 	/* One row is in the tab order: the selected one, or the first while
 	   nothing is selected, so the tree can be reached from the keyboard at
 	   all. Arrowing moves focus with the selection. */
@@ -264,6 +351,10 @@
 			class:dragging={drag?.id === row.node.id}
 			class:dropmark={dropAt?.id === row.node.id && dropAt.side === "before"}
 			class:dropmark-after={dropAt?.id === row.node.id && dropAt.side === "after"}
+			class:moving={moving === row.node.id}
+			class:movemark={moveAt?.id === row.node.id && moveAt.position === "before"}
+			class:movemark-after={moveAt?.id === row.node.id && moveAt.position === "after"}
+			class:movemark-inside={moveAt?.id === row.node.id && moveAt.position === "inside"}
 			style="--kit-tree-depth: {row.depth}"
 			role="treeitem"
 			aria-selected={selected === row.node.id}
@@ -272,11 +363,18 @@
 			tabindex={focusable === row.node.id ? 0 : -1}
 			onpointerdowncapture={(event) => soloPress(row.node, event)}
 			onclickcapture={(event) => soloPress(row.node, event)}
+			onpointerdown={(event) => pressRow(row.node, event)}
 			onpointermove={(event) => {
 				crossPaint(row.node);
 				overRow(row.node.id, row.parentId, event);
+				overMove(row.node, event);
 			}}
 			onclick={(event) => {
+				/* The click that ends a move selects nothing. */
+				if (swallowClick) {
+					swallowClick = false;
+					return;
+				}
 				/* A modified click is the BRANCH gesture and not a selection:
 				   changing what is selected on the way past would be a second
 				   thing nobody asked for. Checked before the button/label guard

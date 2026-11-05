@@ -271,6 +271,26 @@ export const toggleSolo = (
 export const dropSide = (pointerY: number, box: { top: number; height: number }): "before" | "after" =>
 	pointerY > box.top + box.height / 2 ? "after" : "before";
 
+/* Where a MOVE lands (the Hierarchy's drag, `Tree`'s `move`): before or after
+   the target row, or INSIDE it (a new last child). The row's middle half
+   nests, its quarters at the edges place beside it; a row that cannot take
+   children splits in halves, like `dropSide`. */
+export type MovePosition = "before" | "inside" | "after";
+
+export const moveZone = (
+	pointerY: number,
+	box: { top: number; height: number },
+	nests: boolean,
+): MovePosition => {
+	if (!nests) return dropSide(pointerY, box);
+	const at = (pointerY - box.top) / Math.max(1, box.height);
+	return at < 0.25 ? "before" : at > 0.75 ? "after" : "inside";
+};
+
+/* A node can't move beside or into itself, nor into its own subtree. */
+export const canMoveTo = (nodes: readonly TreeNode[], id: string, targetId: string): boolean =>
+	id !== targetId && !(ancestorIds(nodes, targetId) ?? []).includes(id);
+
 /* Reorder within one parent's list. A drop on itself, or across parents, is
    a no-op — the same guard the DOM version got from `parentElement` equality
    and the reason a drag out of a subtree cannot silently reparent. */
