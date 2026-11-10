@@ -68,6 +68,19 @@ export {
 	syncSlider,
 } from "./slider";
 export type { DualRange, SliderBounds, SliderRange } from "./slider";
+export {
+	bindCarryTarget,
+	CARRY_DROP,
+	CARRY_END,
+	CARRY_LEAVE,
+	CARRY_OVER,
+	CARRY_START,
+	isCarried,
+	startCarry,
+} from "./carry";
+export type { Carried, Carry, CarryTarget } from "./carry";
+export { fuzzyScore, itemLabel, pickerRows, RECENT_LIMIT, slotAccepts, withRecent } from "./objectField";
+export type { ObjectItem, PickerRow } from "./objectField";
 export { nextSort, sortRows } from "./sort";
 export type { SortDirection, SortState } from "./sort";
 export {

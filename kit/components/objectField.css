@@ -1,0 +1,83 @@
+/* Object field — a slot holding one item, a drop target and a picker
+   (`objectField.svelte`). The slot is a field (`field.css`) whose text is a
+   pill button; the picker is a floating menu (`menu.css`) with a search
+   field over its rows. */
+
+.kit-object-pill {
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	gap: var(--dock-pad-tight);
+	min-width: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+	line-height: 1.5;
+	text-align: left;
+	cursor: pointer;
+}
+.kit-object-pill:focus-visible {
+	outline: var(--dock-divider) solid var(--tool-accent);
+}
+.kit-object-pill:disabled {
+	cursor: default;
+}
+.kit-object-pill.empty {
+	color: var(--tool-muted);
+}
+.kit-object-pill.missing .kit-object-label {
+	color: var(--tool-orange);
+}
+.kit-object-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.kit-object-note {
+	flex: none;
+	color: var(--tool-muted);
+	white-space: nowrap;
+}
+
+/* A carry this slot would take is in flight: the slot says so before the
+   pointer gets there. Over it, the slot takes the accent. */
+.kit-field.kit-object.ready {
+	border-block-end-color: var(--tool-accent);
+}
+.kit-field.kit-object.over {
+	background: color-mix(in srgb, var(--tool-accent) 20%, transparent);
+	border-block-end-color: var(--tool-accent);
+}
+
+/* ── the picker ──────────────────────────────────────────────────────── */
+.kit-object-picker {
+	max-width: calc(4 * var(--dock-menu-min-w));
+}
+.kit-object-search {
+	padding-inline: var(--dock-pad-tight);
+}
+.kit-object-rows {
+	display: flex;
+	flex-direction: column;
+	max-height: calc(2 * var(--dock-menu-min-w));
+	overflow-y: auto;
+}
+.kit-object-rows .kit-menu-item {
+	flex: none;
+}
+.kit-object-rows .kit-menu-item .kit-object-note {
+	margin-inline-start: auto;
+	padding-inline-start: var(--tool-space-3);
+}
+.kit-object-rows .kit-menu-item.on {
+	color: var(--tool-accent);
+}
+.kit-object-group {
+	padding: calc(var(--tool-space-1) / 2) var(--dock-pad-tight);
+	color: var(--tool-muted);
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+}

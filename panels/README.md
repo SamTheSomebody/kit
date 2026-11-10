@@ -47,7 +47,7 @@ Minimal is `Console` + `ConsoleLines`. Several consoles side by side share one `
 <Hierarchy {nodes} bind:selected persist="my-tool:scene" />
 ```
 
-`nodes` are kit `TreeNode`s: `label`, plus `note`, `kind`, `badges` and `muted`. Hierarchy itself takes a `trailing` snippet (a cell at the end of every row), an `actions` snippet (keys after the filter), and `eye` with `bind:marked` for a visibility column. `persist` names the localStorage key the open branches are kept under; until something is saved, the top level starts open.
+`nodes` are kit `TreeNode`s: `label`, plus `note`, `kind`, `badges` and `muted`. Hierarchy itself takes a `trailing` snippet (a cell at the end of every row), an `actions` snippet (keys after the filter), and `eye` with `bind:marked` for a visibility column. `carry` makes rows draggable out of the tree onto a kit `ObjectField` (return `{ kind, id, label }`, or `undefined` for a row that carries nothing). `persist` names the localStorage key the open branches are kept under; until something is saved, the top level starts open.
 
 ## Inspector
 
