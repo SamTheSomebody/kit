@@ -19,6 +19,7 @@ Layout and formatting are the kit's decisions, not yours. Pick a recipe and a co
 | Key/value readout                     | `Meta`                                                                                                                                                                  |
 | A log or console                      | `@samthesomebody/panels`: `Console` + `ConsoleLines` (+ `ConsoleBar`, `ConsoleInput`, `ConsoleDetail`); share a `ConsoleView` across panes                              |
 | A scene or object tree                | panels `Hierarchy` (kit `Tree` rows: `label`, `note`, `kind`, `badges`, `muted`, `trailing`)                                                                            |
+| Pick one item of a domain (an event, a node) | `ObjectField` (search picker; drop a row from a `Tree` with `carry`) |
 | Edit the selected thing               | panels `Inspector` > `Container size="fill"` > panels `InspectorSection` > `Column recipe="fields"` > `Property` + `PropertyEditor`; add a type with `editors.register` |
 | Scrolling pane body                   | `Container size="fill"`                                                                                                                                                 |
 | Canvas, iframe or video               | the stage, not layout                                                                                                                                                   |
@@ -28,7 +29,7 @@ The primitives are `Container`, `Columns`, `Column`, `Row` and `Slot`. Their pro
 
 Whole panes (Console, Hierarchy, Inspector) come from `@samthesomebody/panels`, which composes kit; kit never imports it.
 
-The controls are `Button` (two states: `checked`), `IconButton`, `Segment` (three or more states), `Field`, `Select`, `Slider`, `Checkbox`, `Tree`, `Table`, `Meta`, `Section`, `Label`, `Badge`, `Scroll` and `Pane`. Use sentence case everywhere. Hide something with `hidden`.
+The controls are `Button` (two states: `checked`), `IconButton`, `Segment` (three or more states), `Field`, `Select`, `ObjectField`, `Slider`, `Checkbox`, `Tree`, `Table`, `Meta`, `Section`, `Label`, `Badge`, `Scroll` and `Pane`. Use sentence case everywhere. Hide something with `hidden`.
 
 ## kit-check
 

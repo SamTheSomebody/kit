@@ -23,6 +23,7 @@
 	} from "./index.ts";
 
 	import { onDestroy, tick, type Snippet } from "svelte";
+	import { startCarry, type Carried, type Carry } from "./carry.ts";
 	import Badge from "./badge.svelte";
 	import Checkbox from "./checkbox.svelte";
 	import IconButton from "./iconButton.svelte";
@@ -30,6 +31,7 @@
 	import "./controls.css";
 	import "./tree.css";
 	import "./checkbox.css";
+	import "./carry.css";
 
 	/* THE TREE DEFAULTS TO NO CHECKBOX. The eye is the visibility mark and
 	   the accent bar is selection; `select` adds checkboxes only for picking
@@ -65,6 +67,7 @@
 		move = false,
 		canMove,
 		nests,
+		carry,
 		mark = "visible",
 		eye = true,
 		disabled = false,
@@ -89,6 +92,10 @@
 		canMove?: (node: TreeNode) => boolean;
 		/* whether a row takes children dropped into it (default: every row) */
 		nests?: (node: TreeNode) => boolean;
+		/* what a row carries when dragged out of the tree onto a slot (`carry.ts`);
+		   undefined for a row that carries nothing. With `move`, a drag inside the
+		   tree still moves and turns into a carry as it leaves. */
+		carry?: (node: TreeNode) => Carried | undefined;
 		/* which icon carries the mark in the plain form */
 		mark?: IconName;
 		/* the seen/not-seen control. Off for a list that only selects. */
@@ -228,18 +235,25 @@
 		if (drag) cancelDrag();
 	});
 
-	/* ── move ────────────────────────────────────────────────────────────
+	/* ── move and carry ──────────────────────────────────────────────────
 	   Unity's Hierarchy: press a row and drag it past MOVE_SLOP pixels, and it
 	   moves; a press that doesn't travel is a click and selects. The bar
 	   marks before / after, an outline marks INSIDE (a new last child). A drop
 	   on itself or its own subtree is refused, and so is one into a row that
-	   doesn't nest. The click that ends a drag selects nothing. */
+	   doesn't nest. The click that ends a drag selects nothing.
+
+	   CARRY is the same press taken out of the tree: once the pointer leaves
+	   the tree (at once, for a row that can't move) a row with a `carry`
+	   payload is carried to whatever slot takes it, and coming back in turns
+	   it into a move again. */
 	const MOVE_SLOP = 4;
-	let press = $state<{ id: string; x: number; y: number } | undefined>();
+	let press = $state<{ node: TreeNode; x: number; y: number } | undefined>();
+	let travelled = false;
 	let moving = $state<string | undefined>();
 	let moveAt = $state<{ id: string; position: MovePosition } | undefined>();
+	let carrying: Carry | undefined;
 	let swallowClick = false;
-	/* Stops listening for the press's release (set while a row is pressed). */
+	/* Stops listening for the press's travel and release (set while a row is pressed). */
 	let unlisten: (() => void) | undefined;
 
 	/* The window and body the tree is drawn in, not this module's: a tool that one
@@ -247,30 +261,67 @@
 	   events in the page's window, which <svelte:window> would not hear. */
 	const ownWindow = (): Window => treeElement?.ownerDocument.defaultView ?? window;
 
+	const movable = (node: TreeNode): boolean => move && (canMove === undefined || canMove(node));
+
 	const pressRow = (node: TreeNode, event: PointerEvent): void => {
 		swallowClick = false;
-		if (!move || event.button !== 0 || (canMove !== undefined && !canMove(node))) return;
+		if (event.button !== 0 || (!movable(node) && carry?.(node) === undefined)) return;
 		if ((event.target as HTMLElement).closest("button, label, input")) return;
-		press = { id: node.id, x: event.clientX, y: event.clientY };
+		press = { node, x: event.clientX, y: event.clientY };
+		travelled = false;
 		unlisten?.();
 		const view = ownWindow();
+		view.addEventListener("pointermove", travel);
 		view.addEventListener("pointerup", endMove);
 		view.addEventListener("pointercancel", cancelMove);
 		view.addEventListener("blur", cancelMove);
 		unlisten = () => {
+			view.removeEventListener("pointermove", travel);
 			view.removeEventListener("pointerup", endMove);
 			view.removeEventListener("pointercancel", cancelMove);
 			view.removeEventListener("blur", cancelMove);
 		};
 	};
 
-	const overMove = (node: TreeNode, event: PointerEvent): void => {
-		if (press !== undefined && moving === undefined) {
+	const insideTree = (event: PointerEvent): boolean => {
+		const box = treeElement?.getBoundingClientRect();
+		return (
+			box !== undefined &&
+			event.clientX >= box.left &&
+			event.clientX < box.right &&
+			event.clientY >= box.top &&
+			event.clientY < box.bottom
+		);
+	};
+
+	/* The pressed row's travel, anywhere in the window: a move while it's over
+	   the tree and the row can move, a carry otherwise. */
+	const travel = (event: PointerEvent): void => {
+		if (press === undefined) return;
+		if (!travelled) {
 			if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < MOVE_SLOP) return;
-			moving = press.id;
+			travelled = true;
 			ownWindow().document.body.classList.add("reordering");
 		}
-		if (moving === undefined) return;
+		const node = press.node;
+		if (movable(node) && insideTree(event)) {
+			carrying?.cancel();
+			carrying = undefined;
+			moving = node.id;
+			return;
+		}
+		moveAt = undefined;
+		if (carrying === undefined) {
+			const carried = carry?.(node);
+			if (carried === undefined || treeElement === undefined) return;
+			moving = node.id;
+			carrying = startCarry(treeElement, carried);
+		}
+		carrying.move(event.clientX, event.clientY);
+	};
+
+	const overMove = (node: TreeNode, event: PointerEvent): void => {
+		if (moving === undefined || carrying !== undefined) return;
 		if (!canMoveTo(nodes, moving, node.id)) {
 			moveAt = undefined;
 			return;
@@ -279,12 +330,17 @@
 		moveAt = { id: node.id, position: moveZone(event.clientY, box, nests?.(node) ?? true) };
 	};
 
-	const endMove = (): void => {
-		if (moving !== undefined) {
+	const endMove = (event: PointerEvent): void => {
+		if (travelled) {
 			/* the click this release makes, if any, comes in the same task */
 			swallowClick = true;
 			ownWindow().setTimeout(() => (swallowClick = false), 0);
-			if (moveAt !== undefined) onmove?.({ id: moving, target: moveAt.id, position: moveAt.position });
+			if (carrying !== undefined) {
+				carrying.drop(event.clientX, event.clientY);
+				carrying = undefined;
+			} else if (moving !== undefined && moveAt !== undefined) {
+				onmove?.({ id: moving, target: moveAt.id, position: moveAt.position });
+			}
 		}
 		cancelMove();
 	};
@@ -292,7 +348,10 @@
 	const cancelMove = (): void => {
 		unlisten?.();
 		unlisten = undefined;
-		if (moving !== undefined) ownWindow().document.body.classList.remove("reordering");
+		carrying?.cancel();
+		carrying = undefined;
+		if (travelled) ownWindow().document.body.classList.remove("reordering");
+		travelled = false;
 		press = undefined;
 		moving = undefined;
 		moveAt = undefined;

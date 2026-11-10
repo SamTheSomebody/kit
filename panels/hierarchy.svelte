@@ -11,6 +11,7 @@
 		branchIds,
 		filterTree,
 		nodeCount,
+		type Carried,
 		type MovePosition,
 		type TreeNode,
 	} from "@samthesomebody/kit/components";
@@ -37,6 +38,7 @@
 		canMove,
 		nests,
 		onmove,
+		carry,
 		trailing,
 		actions,
 	}: {
@@ -56,6 +58,8 @@
 		canMove?: (node: TreeNode) => boolean;
 		nests?: (node: TreeNode) => boolean;
 		onmove?: (move: { id: string; target: string; position: MovePosition }) => void;
+		/* what a row carries when dragged out onto an object field (`Tree`'s `carry`) */
+		carry?: (node: TreeNode) => Carried | undefined;
 		trailing?: Snippet<[TreeNode]>;
 		/* the tool's own controls, after the filter */
 		actions?: Snippet;
@@ -160,6 +164,7 @@
 				{canMove}
 				{nests}
 				{onmove}
+				{carry}
 				{trailing}
 			/>
 		{/if}

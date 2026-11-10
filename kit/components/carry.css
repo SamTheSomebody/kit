@@ -1,0 +1,26 @@
+/* Carry — the ghost a dragged-out row leaves under the pointer (`carry.ts`).
+   It floats on the menu layer and never takes the pointer itself: the slot
+   under it is found by hit-testing, and the ghost would be the first hit. */
+
+.kit-carry-ghost {
+	position: fixed;
+	z-index: var(--dock-z-menu);
+	padding: calc(var(--tool-space-1) / 2) var(--dock-pad-tight);
+	border: var(--dock-divider) solid var(--tool-accent);
+	border-radius: var(--surface-radius);
+	background: var(--surface-bg);
+	box-shadow: var(--surface-shadow-far);
+	color: var(--tool-text);
+	font-family: var(--tool-font);
+	font-size: var(--tool-font-size-body);
+	line-height: 1;
+	white-space: nowrap;
+	pointer-events: none;
+	/* beside the pointer, not under it */
+	transform: translate(var(--tool-space-3), var(--tool-space-2));
+}
+/* nothing under the pointer takes it: dropping here does nothing */
+.kit-carry-ghost.refused {
+	border-color: var(--tool-border);
+	color: var(--tool-muted);
+}
