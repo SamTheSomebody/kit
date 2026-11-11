@@ -1,5 +1,11 @@
 # @samthesomebody/panels
 
+## 0.6.0
+
+### Minor Changes
+
+- 00fa836: Inspector: `onrename` makes the name in its head an editable field, as Unity's name box (Enter or leaving it renames, Escape puts it back).
+
 ## 0.5.0
 
 ### Minor Changes
