@@ -1,6 +1,6 @@
 {
   "name": "@samthesomebody/panels",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Tool panes composed from @samthesomebody/kit: Console, Hierarchy and Inspector. Kit does not depend on panels.",
   "type": "module",
   "license": "MIT",
