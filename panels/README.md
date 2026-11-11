@@ -63,6 +63,8 @@ Minimal is `Console` + `ConsoleLines`. Several consoles side by side share one `
 </Inspector>
 ```
 
+Pass `onrename` and the name is a field, Unity's name box: Enter or leaving it calls `onrename(name)` (an empty or unchanged name is ignored), Escape puts the name back. Key the selection by something the rename doesn't change, so renaming keeps it selected.
+
 A tool adds a type by registering an editor on the kit's `editors` registry (`import { editors, defineEditor } from '@samthesomebody/kit/editors'`).
 
 Folds are remembered per **fold store**. Give each tool its own, so two tools on one origin don't fold each other's sections:
